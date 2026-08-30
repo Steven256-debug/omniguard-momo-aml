@@ -57,6 +57,28 @@ const InvestigationView = ({ alert, onActionComplete }) => {
             Automated Flag Reason (Score: {alert.score.toFixed(2)})
           </div>
           <div>{alert.reason}</div>
+          
+          {alert.explainability && alert.explainability.length > 0 && (
+            <div className="explainability-panel">
+              <h4>Model Explainability (Feature Importance)</h4>
+              <div className="explainability-list">
+                {alert.explainability.map((item, index) => (
+                  <div key={index} className="explain-item">
+                    <div className="explain-header">
+                      <span>{item.feature}</span>
+                      <span>+{item.weight}%</span>
+                    </div>
+                    <div className="progress-bar-bg">
+                      <div 
+                        className={`progress-bar-fill bg-${item.type}`} 
+                        style={{ width: `${item.weight}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="details-grid">

@@ -46,7 +46,12 @@ export const fetchMockAlerts = () => {
       score: 0.89,
       reason: "High velocity circular transfer detected.",
       device: "DEV_X9Y8Z7",
-      ip: "192.168.1.45"
+      ip: "192.168.1.45",
+      explainability: [
+        { feature: "Transfer Velocity (10m)", weight: 45, type: "danger" },
+        { feature: "Circular Pattern Match", weight: 30, type: "danger" },
+        { feature: "New Device IP", weight: 14, type: "warning" }
+      ]
     },
     {
       id: "TXN_C3D4E5F6",
@@ -57,7 +62,11 @@ export const fetchMockAlerts = () => {
       score: 0.95,
       reason: "Fallback Rule: High Value (> 5000) AND High Velocity (> 3 in 10m)",
       device: "DEV_A1B2C3",
-      ip: "10.0.0.5"
+      ip: "10.0.0.5",
+      explainability: [
+        { feature: "Transaction Value", weight: 65, type: "danger" },
+        { feature: "Transfer Velocity (10m)", weight: 30, type: "danger" }
+      ]
     },
     {
       id: "TXN_77889900",
@@ -68,7 +77,22 @@ export const fetchMockAlerts = () => {
       score: 0.82,
       reason: "Multiple wallets sharing same device.",
       device: "DEV_Z9Y8X7",
-      ip: "172.16.0.1"
+      ip: "172.16.0.1",
+      explainability: [
+        { feature: "Device Graph Centrality", weight: 55, type: "danger" },
+        { feature: "Synthetic ID Probability", weight: 27, type: "warning" }
+      ]
     }
+  ];
+};
+
+export const fetchRegionalTrends = () => {
+  return [
+    { name: 'Greater Accra', total: 4500, flagged: 320, safe: 4180 },
+    { name: 'Ashanti', total: 3200, flagged: 190, safe: 3010 },
+    { name: 'Western', total: 2100, flagged: 85, safe: 2015 },
+    { name: 'Northern', total: 1800, flagged: 140, safe: 1660 },
+    { name: 'Central', total: 1500, flagged: 60, safe: 1440 },
+    { name: 'Volta', total: 900, flagged: 30, safe: 870 },
   ];
 };
