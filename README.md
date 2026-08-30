@@ -14,6 +14,27 @@
 
 OmniGuard MoMo AML is an enterprise-grade solution that securely evaluates Mobile Money (MoMo) transactions in real-time. The system seamlessly integrates with core banking ledgers, enables human investigation workflows, and enforces robust system resilience through graceful degradation.
 
+---
+
+## 🚨 The Problem Statement
+As Ghana rapidly advances its financial inclusion goals, fraudulent activity is migrating from traditional banking toward the digital edge. According to the Bank of Ghana's 2025 Fraud Report, electronic fraud incidents within the Payment Service Provider (PSP) and mobile money sector surged by 54% to 24,124 cases, with the total value at risk nearly doubling to GH¢37 million.
+
+Modern financial criminals utilize complex, multi-hop networks of synthetic identities, mule accounts, and burner devices to siphon funds. Traditional, rule-based Anti-Money Laundering (AML) systems are completely unequipped to track these relational networks. As a result, legacy systems generate massive volumes of false positives that exhaust human investigative resources, frustrate legitimate customers, and ultimately fail to stop coordinated fraud rings.
+
+## 💡 The Solution
+OmniGuard MoMo AML abandons static rules in favor of a cloud-native, AI-driven architectural pipeline. It solves the limitations of legacy systems through three core technological pillars:
+
+- **Identity Unification**: Leverages **AWS Entity Resolution** to ingest disparate data streams and standardize records, assigning a single, persistent identifier to users even if they attempt to obfuscate their details across multiple networks.
+- **Graph-Based Network Mapping**: Transactions and entities are mapped into **Amazon Neptune**, a memory-optimized graph database. By running community detection algorithms, the system instantly traverses complex relationships to visualize hidden fraud rings (e.g., detecting if 50 independent wallets are logging in from the same device fingerprint).
+- **Unsupervised Machine Learning**: Graph metrics are piped into **Amazon SageMaker**, which learns the high-dimensional patterns of legitimate financial behavior. When a transaction deviates from these learned patterns, the model assigns a real-time anomaly score, freezing the transaction before settlement.
+
+## 🌍 Significance & Impact
+This project provides the highly resilient infrastructure required to safely scale financial inclusion across Ghana.
+
+Beyond just detecting fraud, this architecture is designed with **Enterprise Systems Thinking**. By utilizing decoupled event routers (Amazon EventBridge) and fallback circuit breakers, the system guarantees that heavy machine-learning workloads never bottleneck the national payment grid. Furthermore, the inclusion of a Human-In-The-Loop (HITL) analyst dashboard ensures model explainability and continuous feedback, helping financial institutions maintain strict regulatory compliance with the Bank of Ghana's Cyber and Information Security Directive (CISD 2026).
+
+---
+
 ## 🏗️ Architecture Overview
 
 The system architecture is a highly decoupled, event-driven pipeline comprising the following key subsystems:
