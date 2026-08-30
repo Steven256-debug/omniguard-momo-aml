@@ -1,0 +1,40 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 18
+      python: 3.10
+    commands:
+      - echo "Installing AWS SAM CLI..."
+      # SAM CLI is typically pre-installed on the standard CodeBuild image, but we ensure it's up to date.
+      # Installing frontend dependencies
+      - echo "Installing Frontend Dependencies..."
+      - cd frontend && npm install && cd ..
+      
+  build:
+    commands:
+      - echo "Building React Frontend..."
+      - cd frontend && npm run build && cd ..
+      
+      - echo "Building SAM Application..."
+      - cd infrastructure
+      - sam build --template-file template.yaml
+      
+  post_build:
+    commands:
+      - echo "Deploying SAM Application to AWS..."
+      # Deploy the SAM application stack
+      - sam deploy --template-file .aws-sam/build/template.yaml --stack-name omniguard-momo-aml-stack --capabilities CAPABILITY_IAM --resolve-s3 --no-confirm-changeset --no-fail-on-empty-changeset
+      
+      - echo "Retrieving Frontend Bucket Name from Stack Outputs..."
+      - export FRONTEND_BUCKET=$(aws cloudformation describe-stacks --stack-name omniguard-momo-aml-stack --query "Stacks[0].Outputs[?OutputKey=='FrontendBucketName'].OutputValue" --output text)
+      
+      - echo "Syncing React Build to S3 Bucket: $FRONTEND_BUCKET"
+      - aws s3 sync ../frontend/dist/ s3://$FRONTEND_BUCKET --delete
+      
+      - echo "Deployment Complete!"
+
+artifacts:
+  files:
+    - '**/*'

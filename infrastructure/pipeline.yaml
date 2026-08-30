@@ -1,0 +1,193 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  OmniGuard MoMo AML - CI/CD Pipeline
+  Provisions AWS CodePipeline and CodeBuild to deploy the application from GitHub.
+
+Parameters:
+  GitHubConnectionArn:
+    Type: String
+    Description: ARN of the AWS CodeStar Connection to GitHub (must be created manually in Console first).
+    Default: 'arn:aws:codestar-connections:region:account:connection/dummy'
+  GitHubRepositoryId:
+    Type: String
+    Description: GitHub Repository ID in the format "Owner/Repo".
+    Default: 'Steven256-debug/omniguard-momo-aml'
+  GitHubBranchName:
+    Type: String
+    Description: The branch to trigger the pipeline on.
+    Default: 'main'
+
+Resources:
+  # ---------------------------------------------------------
+  # 1. Pipeline Artifact Store (S3)
+  # ---------------------------------------------------------
+  ArtifactStoreBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  # ---------------------------------------------------------
+  # 2. IAM Roles
+  # ---------------------------------------------------------
+  CodePipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: CodePipelinePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:GetBucketVersioning
+                Resource:
+                  - !Sub "${ArtifactStoreBucket.Arn}"
+                  - !Sub "${ArtifactStoreBucket.Arn}/*"
+              - Effect: Allow
+                Action:
+                  - codebuild:BatchGetBuilds
+                  - codebuild:StartBuild
+                  - codebuild:StopBuild
+                Resource: !GetAtt CodeBuildProject.Arn
+              - Effect: Allow
+                Action:
+                  - codestar-connections:UseConnection
+                Resource: !Ref GitHubConnectionArn
+
+  CodeBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: CodeBuildPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:GetBucketVersioning
+                Resource:
+                  - !Sub "${ArtifactStoreBucket.Arn}"
+                  - !Sub "${ArtifactStoreBucket.Arn}/*"
+              - Effect: Allow
+                Action:
+                  - cloudformation:*
+                  - s3:*
+                  - iam:PassRole
+                  - iam:CreateRole
+                  - iam:PutRolePolicy
+                  - iam:AttachRolePolicy
+                  - iam:DeleteRolePolicy
+                  - iam:DetachRolePolicy
+                  - iam:DeleteRole
+                  - iam:GetRole
+                  - lambda:*
+                  - apigateway:*
+                  - dynamodb:*
+                  - events:*
+                  - neptune-db:*
+                  - rds:*
+                  - ec2:*
+                  - cloudfront:*
+                # For an enterprise deployment, this role should be strictly bounded.
+                # Here we allow broad access so SAM can provision the required resources.
+                Resource: "*"
+
+  # ---------------------------------------------------------
+  # 3. AWS CodeBuild Project
+  # ---------------------------------------------------------
+  CodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: "OmniGuard-BuildDeploy"
+      ServiceRole: !GetAtt CodeBuildRole.Arn
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:7.0 # Supports Node.js and Python
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: buildspec.yml
+      TimeoutInMinutes: 20
+
+  # ---------------------------------------------------------
+  # 4. AWS CodePipeline
+  # ---------------------------------------------------------
+  AppPipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: "OmniGuard-Pipeline"
+      RoleArn: !GetAtt CodePipelineRole.Arn
+      ArtifactStore:
+        Type: S3
+        Location: !Ref ArtifactStoreBucket
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: GitHub_Source
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeStarSourceConnection
+                Version: '1'
+              OutputArtifacts:
+                - Name: SourceOutput
+              Configuration:
+                ConnectionArn: !Ref GitHubConnectionArn
+                FullRepositoryId: !Ref GitHubRepositoryId
+                BranchName: !Ref GitHubBranchName
+              RunOrder: 1
+        - Name: Build_and_Deploy
+          Actions:
+            - Name: CodeBuild_SAM_React
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: '1'
+              InputArtifacts:
+                - Name: SourceOutput
+              OutputArtifacts:
+                - Name: BuildOutput
+              Configuration:
+                ProjectName: !Ref CodeBuildProject
+              RunOrder: 1
+
+Outputs:
+  PipelineUrl:
+    Description: "The URL of the created AWS CodePipeline"
+    Value: !Sub "https://console.aws.amazon.com/codesuite/codepipeline/pipelines/${AppPipeline}/view?region=${AWS::Region}"

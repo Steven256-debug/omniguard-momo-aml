@@ -1,0 +1,273 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  OmniGuard MoMo AML
+  SAM Template for Enterprise AML system with Neptune, SageMaker, EventBridge, and DynamoDB Fallback.
+
+Globals:
+  Function:
+    Timeout: 10
+    MemorySize: 256
+    Runtime: python3.10
+    Architectures:
+      - x86_64
+
+Resources:
+  # ---------------------------------------------------------
+  # 1. Data Lake (S3 Buckets)
+  # ---------------------------------------------------------
+  RawDataBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "omniguard-raw-data-${AWS::AccountId}-${AWS::Region}"
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  HITLFeedbackBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "omniguard-hitl-feedback-${AWS::AccountId}-${AWS::Region}"
+      VersioningConfiguration:
+        Status: Enabled
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: ["*"]
+            AllowedMethods: ["GET", "PUT", "POST", "DELETE", "HEAD"]
+            AllowedOrigins: ["*"]
+            MaxAge: 3000
+
+  # ---------------------------------------------------------
+  # 1.5 Frontend Hosting (S3 + CloudFront)
+  # ---------------------------------------------------------
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "omniguard-frontend-${AWS::AccountId}-${AWS::Region}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: "cloudfront.amazonaws.com"
+            Action: "s3:GetObject"
+            Resource: !Sub "${FrontendBucket.Arn}/*"
+            Condition:
+              StringEquals:
+                "AWS:SourceArn": !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${FrontendDistribution}"
+
+  FrontendOriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub "OAC-${FrontendBucket}"
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  FrontendDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        DefaultRootObject: "index.html"
+        Origins:
+          - Id: FrontendS3Origin
+            DomainName: !GetAtt FrontendBucket.RegionalDomainName
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+            OriginAccessControlId: !GetAtt FrontendOriginAccessControl.Id
+        DefaultCacheBehavior:
+          TargetOriginId: FrontendS3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          CachedMethods:
+            - GET
+            - HEAD
+          ForwardedValues:
+            QueryString: false
+
+  # ---------------------------------------------------------
+  # 2. DynamoDB Tables (Static Rules and Transaction History)
+  # ---------------------------------------------------------
+  StaticRulesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: "OmniGuard-StaticRules"
+      AttributeDefinitions:
+        - AttributeName: "RuleId"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "RuleId"
+          KeyType: "HASH"
+      BillingMode: PAY_PER_REQUEST
+
+  TransactionHistoryTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: "OmniGuard-TransactionHistory"
+      AttributeDefinitions:
+        - AttributeName: "SenderId"
+          AttributeType: "S"
+        - AttributeName: "Timestamp"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "SenderId"
+          KeyType: "HASH"
+        - AttributeName: "Timestamp"
+          KeyType: "RANGE"
+      BillingMode: PAY_PER_REQUEST
+
+  # ---------------------------------------------------------
+  # 3. Amazon EventBridge (Enterprise Router)
+  # ---------------------------------------------------------
+  EnterpriseEventBus:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: "OmniGuard-EnterpriseBus"
+
+  # ---------------------------------------------------------
+  # 4. Amazon Neptune (Graph Database for Entity Mapping)
+  # ---------------------------------------------------------
+  # Note: In a production template, VPC, Subnets, and Security Groups must be configured.
+  # For demonstration, creating a basic Neptune DB Cluster.
+  NeptuneDBCluster:
+    Type: AWS::Neptune::DBCluster
+    Properties:
+      DBClusterIdentifier: "omniguard-neptune-cluster"
+      IamAuthEnabled: true
+      BackupRetentionPeriod: 7
+      PreferredBackupWindow: "07:00-09:00"
+
+  NeptuneDBInstance:
+    Type: AWS::Neptune::DBInstance
+    Properties:
+      DBInstanceIdentifier: "omniguard-neptune-instance"
+      DBInstanceClass: "db.t3.medium"
+      DBClusterIdentifier: !Ref NeptuneDBCluster
+
+  # ---------------------------------------------------------
+  # 5. API Gateway & Scoring Lambda
+  # ---------------------------------------------------------
+  ScoringApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+
+  ScoringFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../src/
+      Handler: scoring_lambda.lambda_handler
+      Description: Scoring Lambda with circuit breaker pattern and EventBridge integration
+      Environment:
+        Variables:
+          SAGEMAKER_ENDPOINT: "omniguard-sagemaker-endpoint"
+          DYNAMODB_RULES_TABLE: !Ref StaticRulesTable
+          DYNAMODB_HISTORY_TABLE: !Ref TransactionHistoryTable
+          EVENT_BUS_NAME: !Ref EnterpriseEventBus
+      Policies:
+        # Least privilege: specifically target only the ARNs of created/used resources
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+              Resource: !GetAtt StaticRulesTable.Arn
+            - Effect: Allow
+              Action:
+                - dynamodb:Query
+              Resource: !GetAtt TransactionHistoryTable.Arn
+            - Effect: Allow
+              Action:
+                - events:PutEvents
+              Resource: !GetAtt EnterpriseEventBus.Arn
+            - Effect: Allow
+              Action:
+                - sagemaker:InvokeEndpoint
+              # In practice, this should be the exact SageMaker endpoint ARN.
+              Resource: !Sub "arn:aws:sagemaker:${AWS::Region}:${AWS::AccountId}:endpoint/omniguard-sagemaker-endpoint"
+      Events:
+        ScoreTransaction:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ScoringApi
+            Path: /score
+            Method: post
+
+  # ---------------------------------------------------------
+  # 6. HITL Feedback API & Lambda
+  # ---------------------------------------------------------
+  HITLApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Cors:
+        AllowMethods: "'OPTIONS,POST'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: "'*'" # In production, restrict to CloudFront domain
+
+  HITLFeedbackFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../src/
+      Handler: hitl_lambda.lambda_handler
+      Description: Receives analyst feedback and stores it in the HITL S3 Bucket
+      Environment:
+        Variables:
+          HITL_BUCKET: !Ref HITLFeedbackBucket
+          EVENT_BUS_NAME: !Ref EnterpriseEventBus
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - s3:PutObject
+              Resource: !Sub "${HITLFeedbackBucket.Arn}/*"
+            - Effect: Allow
+              Action:
+                - events:PutEvents
+              Resource: !GetAtt EnterpriseEventBus.Arn
+      Events:
+        SubmitFeedback:
+          Type: Api
+          Properties:
+            RestApiId: !Ref HITLApi
+            Path: /feedback
+            Method: post
+
+Outputs:
+  ScoringApiUrl:
+    Description: "API Gateway endpoint URL for Prod stage for Scoring function"
+    Value: !Sub "https://${ScoringApi}.execute-api.${AWS::Region}.amazonaws.com/prod/score"
+  HITLApiUrl:
+    Description: "API Gateway endpoint URL for Prod stage for HITL function"
+    Value: !Sub "https://${HITLApi}.execute-api.${AWS::Region}.amazonaws.com/prod/feedback"
+  FrontendUrl:
+    Description: "CloudFront URL for the Fraud Analyst Dashboard"
+    Value: !Sub "https://${FrontendDistribution.DomainName}"
+  RawDataBucketName:
+    Description: "S3 Bucket for Raw Transaction Data"
+    Value: !Ref RawDataBucket
+  HITLFeedbackBucketName:
+    Description: "S3 Bucket for HITL Feedback"
+    Value: !Ref HITLFeedbackBucket
+  FrontendBucketName:
+    Description: "S3 Bucket for Frontend Hosting"
+    Value: !Ref FrontendBucket
+  EventBusName:
+    Description: "Enterprise EventBus Name"
+    Value: !Ref EnterpriseEventBus
