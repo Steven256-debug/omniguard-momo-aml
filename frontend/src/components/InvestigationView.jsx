@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { submitHITLFeedback } from '../services/api';
+import { ShieldCheck, AlertOctagon, HelpCircle, Check, X, Info } from 'lucide-react';
 
 const InvestigationView = ({ alert, onActionComplete }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -10,7 +11,7 @@ const InvestigationView = ({ alert, onActionComplete }) => {
       <div className="main-content">
         <div className="empty-state">
           <h2>No Alert Selected</h2>
-          <p>Select a transaction from the inbox to begin investigation.</p>
+          <p>Select a transaction from the triage inbox to inspect AI pattern explanations.</p>
         </div>
       </div>
     );
@@ -24,8 +25,8 @@ const InvestigationView = ({ alert, onActionComplete }) => {
         ? "Analyst confirmed fraudulent activity." 
         : "Analyst verified transaction as legitimate.";
         
-      await submitHITLFeedback(alert.id, feedbackLabel, notes);
-      onActionComplete(alert.id);
+      await submitHITLFeedback(alert.id, feedbackLabel, notes, alert.amount);
+      onActionComplete(alert.id, feedbackLabel);
     } catch (err) {
       setError("Failed to submit feedback. Please try again.");
     } finally {
@@ -33,12 +34,37 @@ const InvestigationView = ({ alert, onActionComplete }) => {
     }
   };
 
+  const isAutoFraud = alert.triage_tier === 'AUTO_CONFIRMED_FRAUD';
+  const isAutoSafe = alert.triage_tier === 'AUTO_CLEARED_SAFE';
+  const isReviewRequired = alert.triage_tier === 'REQUIRES_HUMAN_REVIEW';
+
   return (
     <div className="main-content">
       <div className="investigation-view">
-        <div className="inv-header">
-          <h2>Transaction Investigation</h2>
-          <div className="inv-subtitle">ID: {alert.id}</div>
+        <div className="inv-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <h2>Transaction Investigation &amp; Pattern Analysis</h2>
+            <div className="inv-subtitle">ID: {alert.id} • Account Type: {alert.account_type || 'RETAIL'}</div>
+          </div>
+          
+          {/* Triage Tier Badge */}
+          <div style={{
+            padding: '6px 12px',
+            borderRadius: '6px',
+            fontWeight: 700,
+            fontSize: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            background: isAutoFraud ? 'rgba(239, 68, 68, 0.2)' : isAutoSafe ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+            color: isAutoFraud ? '#ef4444' : isAutoSafe ? '#10b981' : '#f59e0b',
+            border: `1px solid ${isAutoFraud ? '#ef4444' : isAutoSafe ? '#10b981' : '#f59e0b'}`
+          }}>
+            {isAutoFraud && <AlertOctagon size={16} />}
+            {isAutoSafe && <ShieldCheck size={16} />}
+            {isReviewRequired && <HelpCircle size={16} />}
+            {isAutoFraud ? 'AUTO-CONFIRMED FRAUD' : isAutoSafe ? 'AUTO-CLEARED SAFE' : 'REQUIRES HUMAN REVIEW'}
+          </div>
         </div>
 
         {error && (
@@ -47,44 +73,65 @@ const InvestigationView = ({ alert, onActionComplete }) => {
           </div>
         )}
 
-        <div className="anomaly-section">
-          <div className="anomaly-title">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-              <line x1="12" y1="9" x2="12" y2="13"></line>
-              <line x1="12" y1="17" x2="12.01" y2="17"></line>
-            </svg>
-            Automated Flag Reason (Score: {alert.score.toFixed(2)})
+        {/* AI Pattern Narrative Box */}
+        <div style={{
+          background: isAutoFraud ? 'rgba(239, 68, 68, 0.08)' : isAutoSafe ? 'rgba(16, 185, 129, 0.08)' : 'rgba(59, 130, 246, 0.08)',
+          border: `1px solid ${isAutoFraud ? 'rgba(239, 68, 68, 0.3)' : isAutoSafe ? 'rgba(16, 185, 129, 0.3)' : 'rgba(59, 130, 246, 0.3)'}`,
+          borderRadius: '10px',
+          padding: '16px',
+          marginBottom: '20px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <Info size={18} color={isAutoFraud ? '#ef4444' : isAutoSafe ? '#10b981' : '#38bdf8'} />
+            <span style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Automated AI Pattern Explanation &amp; Triaging Rationale
+            </span>
           </div>
-          <div>{alert.reason}</div>
-          
-          {alert.explainability && alert.explainability.length > 0 && (
-            <div className="explainability-panel">
-              <h4>Model Explainability (Feature Importance)</h4>
-              <div className="explainability-list">
-                {alert.explainability.map((item, index) => (
-                  <div key={index} className="explain-item">
-                    <div className="explain-header">
-                      <span>{item.feature}</span>
-                      <span>+{item.weight}%</span>
-                    </div>
-                    <div className="progress-bar-bg">
-                      <div 
-                        className={`progress-bar-fill bg-${item.type}`} 
-                        style={{ width: `${item.weight}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          <p style={{ fontSize: '13px', lineHeight: '1.6', color: 'var(--text-primary)', margin: 0 }}>
+            {alert.narrative || alert.reason}
+          </p>
+          <div style={{ marginTop: '10px', fontSize: '11px', color: 'var(--text-secondary)' }}>
+            System Recommendation: <strong style={{ color: isAutoFraud ? '#ef4444' : isAutoSafe ? '#10b981' : '#f59e0b' }}>{alert.recommendation}</strong>
+          </div>
         </div>
 
+        {/* Explainability Feature Weights */}
+        {alert.explainability && alert.explainability.length > 0 && (
+          <div className="anomaly-section" style={{ marginBottom: '20px' }}>
+            <div className="anomaly-title" style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+              Behavioral Pattern Attribution (Model Explainability)
+            </div>
+            <div className="explainability-panel" style={{ marginTop: '10px' }}>
+              <div className="explainability-list">
+                {alert.explainability.map((item, index) => {
+                  const fillColor = item.type === 'danger' ? '#ef4444' : item.type === 'warning' ? '#f59e0b' : '#10b981';
+                  return (
+                    <div key={index} className="explain-item">
+                      <div className="explain-header">
+                        <span>{item.feature}</span>
+                        <span style={{ color: fillColor, fontWeight: 600 }}>{item.weight}% weight</span>
+                      </div>
+                      <div className="progress-bar-bg">
+                        <div 
+                          className="progress-bar-fill" 
+                          style={{ width: `${item.weight}%`, background: fillColor }}
+                        ></div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Details Grid */}
         <div className="details-grid">
           <div className="detail-group">
             <div className="detail-label">Amount</div>
-            <div className="detail-value">GH¢ {alert.amount.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
+            <div className="detail-value" style={{ color: 'var(--text-primary)', fontWeight: 700 }}>
+              GH¢ {alert.amount.toLocaleString(undefined, {minimumFractionDigits: 2})}
+            </div>
           </div>
           <div className="detail-group">
             <div className="detail-label">Timestamp</div>
@@ -99,7 +146,7 @@ const InvestigationView = ({ alert, onActionComplete }) => {
             <div className="detail-value">{alert.receiver}</div>
           </div>
           <div className="detail-group">
-            <div className="detail-label">Device ID</div>
+            <div className="detail-label">Device Fingerprint</div>
             <div className="detail-value">{alert.device}</div>
           </div>
           <div className="detail-group">
@@ -108,20 +155,23 @@ const InvestigationView = ({ alert, onActionComplete }) => {
           </div>
         </div>
 
-        <div className="actions">
+        {/* Analyst Actions */}
+        <div className="actions" style={{ marginTop: '24px' }}>
           <button 
             className={`btn-danger ${isSubmitting ? 'btn-disabled' : ''}`}
             onClick={() => handleAction('TRUE_POSITIVE')}
             disabled={isSubmitting}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
           >
-            Confirm Fraud (True Positive)
+            <X size={16} /> Confirm Fraud (True Positive)
           </button>
           <button 
             className={`btn-success ${isSubmitting ? 'btn-disabled' : ''}`}
             onClick={() => handleAction('FALSE_POSITIVE')}
             disabled={isSubmitting}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
           >
-            Mark Safe (False Positive)
+            <Check size={16} /> Mark Safe (False Positive)
           </button>
         </div>
       </div>

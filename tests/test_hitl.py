@@ -37,6 +37,40 @@ class TestHITLLambdaEdgeCases(unittest.TestCase):
         mock_s3.put_object.assert_called_once()
         mock_eb.put_events.assert_called_once()
 
+    @patch('hitl_lambda.s3')
+    @patch('hitl_lambda.eventbridge')
+    def test_auto_triage_labels_accepted(self, mock_eb, mock_s3):
+        # Auto-triage labels must be accepted
+        for label in ['AUTO_CONFIRMED_FRAUD', 'AUTO_CLEARED_SAFE']:
+            event = {
+                'httpMethod': 'POST',
+                'body': json.dumps({
+                    'transaction_id': f'TXN_{label}',
+                    'feedback_label': label,
+                    'notes': 'Auto-triaged by AI rule engine',
+                    'reviewer_id': 'SYSTEM_AUTO_TRIAGE'
+                })
+            }
+            response = hitl_lambda.lambda_handler(event, None)
+            self.assertEqual(response['statusCode'], 200)
+
+    @patch('hitl_lambda.s3')
+    @patch('hitl_lambda.eventbridge')
+    def test_batch_auto_triage_processing(self, mock_eb, mock_s3):
+        event = {
+            'httpMethod': 'POST',
+            'body': json.dumps({
+                'items': [
+                    {'transaction_id': 'TXN_B1', 'feedback_label': 'AUTO_CONFIRMED_FRAUD', 'notes': 'Structuring'},
+                    {'transaction_id': 'TXN_B2', 'feedback_label': 'AUTO_CLEARED_SAFE', 'notes': 'Routine'}
+                ]
+            })
+        }
+        response = hitl_lambda.lambda_handler(event, None)
+        self.assertEqual(response['statusCode'], 200)
+        body = json.loads(response['body'])
+        self.assertEqual(body['processed'], 2)
+
     def test_invalid_feedback_label(self):
         event = {
             'httpMethod': 'POST',
@@ -65,7 +99,6 @@ class TestHITLLambdaEdgeCases(unittest.TestCase):
     @patch('hitl_lambda.s3')
     @patch('hitl_lambda.eventbridge')
     def test_high_value_dispute_supervisor_flag(self, mock_eb, mock_s3):
-        # Reversing a fraud flag on a GH¢25,000 transaction must require supervisor audit
         event = {
             'httpMethod': 'POST',
             'body': json.dumps({
