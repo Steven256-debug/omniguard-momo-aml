@@ -5,8 +5,9 @@ import uuid
 import re
 from datetime import datetime, timezone
 
-s3 = boto3.client('s3')
-eventbridge = boto3.client('events')
+DEFAULT_REGION = os.environ.get('AWS_REGION', os.environ.get('AWS_DEFAULT_REGION', 'us-east-1'))
+s3 = boto3.client('s3', region_name=DEFAULT_REGION)
+eventbridge = boto3.client('events', region_name=DEFAULT_REGION)
 
 HITL_BUCKET = os.environ.get('HITL_BUCKET', 'omniguard-hitl-feedback')
 EVENT_BUS_NAME = os.environ.get('EVENT_BUS_NAME', 'OmniGuard-EnterpriseBus')

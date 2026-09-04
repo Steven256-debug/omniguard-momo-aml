@@ -13,12 +13,13 @@ from boto3.dynamodb.conditions import Key
 # Initialize AWS clients
 # Set a tight read_timeout for the SageMaker client to implement the circuit breaker pattern
 # If the endpoint takes longer than 200ms (0.2s), it will raise a ReadTimeoutError
+DEFAULT_REGION = os.environ.get('AWS_REGION', os.environ.get('AWS_DEFAULT_REGION', 'us-east-1'))
 sagemaker_config = Config(read_timeout=0.2, retries={'max_attempts': 0})
-sm_runtime = boto3.client('sagemaker-runtime', config=sagemaker_config)
+sm_runtime = boto3.client('sagemaker-runtime', region_name=DEFAULT_REGION, config=sagemaker_config)
 
-s3 = boto3.client('s3')
-dynamodb = boto3.resource('dynamodb')
-eventbridge = boto3.client('events')
+s3 = boto3.client('s3', region_name=DEFAULT_REGION)
+dynamodb = boto3.resource('dynamodb', region_name=DEFAULT_REGION)
+eventbridge = boto3.client('events', region_name=DEFAULT_REGION)
 
 # Environment Variables & Threshold Defaults
 SAGEMAKER_ENDPOINT = os.environ.get('SAGEMAKER_ENDPOINT', 'omniguard-sagemaker-endpoint')

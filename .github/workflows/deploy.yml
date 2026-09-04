@@ -34,6 +34,11 @@ jobs:
           pip install boto3
 
       - name: Run Unit Tests (Scoring, HITL, Fallback & Security Headers)
+        env:
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: testing
+          AWS_SECRET_ACCESS_KEY: testing
         run: |
           python -m unittest discover -s tests -p "test_*.py" -v
 
@@ -53,8 +58,13 @@ jobs:
           use-installer: true
 
       - name: Validate SAM Template
+        env:
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: testing
+          AWS_SECRET_ACCESS_KEY: testing
         run: |
-          sam validate --template-file infrastructure/template.yaml
+          sam validate --template-file infrastructure/template.yaml --region us-east-1
 
   # ==========================================
   # 3. Frontend Build & Static Verification
@@ -83,7 +93,7 @@ jobs:
   deploy-production:
     name: Deploy Stack & Dashboard to AWS
     needs: [unit-tests, validate-infrastructure, build-frontend]
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && secrets.AWS_ACCESS_KEY_ID != ''
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
