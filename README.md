@@ -54,6 +54,81 @@ Beyond just detecting fraud, this architecture is designed with **Enterprise Sys
 
 ## 🏗️ Architecture Overview
 
+```mermaid
+flowchart TB
+    %% Styling Classes
+    classDef client fill:#1e293b,stroke:#38bdf8,stroke-width:2px,color:#f8fafc;
+    classDef awsCore fill:#0f172a,stroke:#f59e0b,stroke-width:2px,color:#f8fafc;
+    classDef storage fill:#0f172a,stroke:#3b82f6,stroke-width:2px,color:#f8fafc;
+    classDef ml fill:#0f172a,stroke:#10b981,stroke-width:2px,color:#f8fafc;
+    classDef security fill:#0f172a,stroke:#ef4444,stroke-width:2px,color:#f8fafc;
+    classDef hitl fill:#0f172a,stroke:#8b5cf6,stroke-width:2px,color:#f8fafc;
+
+    %% Ingestion Sources
+    subgraph Ingestion["1. Mobile Money & Ingestion Layer"]
+        MoMo["Mobile Money PSPs<br/>(MTN MoMo, Telecel, AT)"]:::client
+        CBS["Core Banking Systems (CBS)"]:::client
+        APIGW["Amazon API Gateway<br/>/score & /feedback"]:::awsCore
+    end
+
+    %% Real-time Evaluation & Resilience
+    subgraph RealTimeScoring["2. Real-Time Scoring & Circuit Breaker"]
+        ScoringLambda["Scoring Lambda<br/>(Input Sanitization & SLA Guard)"]:::awsCore
+        SageMaker["Amazon SageMaker<br/>(Anomaly Autoencoder)"]:::ml
+        CircuitBreaker{"Circuit Breaker<br/>Timeout > 200ms?"}:::security
+        DynamoFallback[("Amazon DynamoDB<br/>Static Rules & Velocity History")]:::storage
+    end
+
+    %% Graph & Identity Resolution
+    subgraph GraphEngine["3. Identity Resolution & Graph Intelligence"]
+        EntityRes["AWS Entity Resolution<br/>(Device & Account Compound Match)"]:::ml
+        Neptune[("Amazon Neptune Analytics<br/>(Sybil Farms, Circular Rings)")]:::storage
+        S3Raw[("Amazon S3 Data Lake<br/>Raw Data + Macie PII Redaction")]:::storage
+    end
+
+    %% Enterprise Bus & Core Banking Action
+    subgraph EnterpriseRouting["4. Enterprise Event Distribution"]
+        EventBus["Amazon EventBridge<br/>(OmniGuard-EnterpriseBus)"]:::awsCore
+        DownstreamLedger["CBS Settlement / Freeze Hold"]:::client
+    end
+
+    %% HITL & Continuous Retraining
+    subgraph HumanInTheLoop["5. Human-In-The-Loop (HITL) Investigation"]
+        CloudFront["Amazon CloudFront (OAC)"]:::security
+        ReactApp["Fraud Analyst Dashboard<br/>(React.js SPA)"]:::hitl
+        HITLLambda["HITL Audit Lambda<br/>(Dual-Control Governance)"]:::awsCore
+        S3HITL[("Amazon S3 Feedback Bucket<br/>omniguard-hitl-feedback")]:::storage
+        RetrainPipeline["SageMaker Continuous<br/>Retraining Pipeline"]:::ml
+    end
+
+    %% Flow Connections
+    MoMo -->|POST /score| APIGW
+    CBS -->|POST /score| APIGW
+    APIGW --> ScoringLambda
+
+    ScoringLambda -->|1. Try ML Inference| SageMaker
+    SageMaker -.->|Anomaly Score| ScoringLambda
+    ScoringLambda -->|2. Timeout / Error| CircuitBreaker
+    CircuitBreaker -->|Fallback Triggered| DynamoFallback
+    DynamoFallback -.->|Static / Smurfing Rule Verdict| ScoringLambda
+
+    S3Raw --> EntityRes
+    EntityRes -->|Resolved Persistent Entities| Neptune
+    Neptune -.->|Sub-Graph Risk Metrics| ScoringLambda
+
+    ScoringLambda -->|Publish FraudScoringDecision| EventBus
+    EventBus -->|Trigger Instant Hold| DownstreamLedger
+    EventBus -->|Alert Flagged Cases| ReactApp
+
+    ReactApp -->|View Cases / Trends| CloudFront
+    CloudFront --> APIGW
+    ReactApp -->|POST /feedback| HITLLambda
+    HITLLambda -->|Store Feedback Record| S3HITL
+    HITLLambda -->|Publish Feedback / Supervisor Alert| EventBus
+    S3HITL -->|Trigger Retraining Job| RetrainPipeline
+    RetrainPipeline -->|Deploy Updated Weights| SageMaker
+```
+
 The system architecture is a highly decoupled, event-driven pipeline comprising the following key subsystems:
 
 1. **Data Ingestion and Privacy**: Transaction logs and KYC records flow into an **Amazon S3 Data Lake**. **Amazon Macie** discovers and redacts PII before the data is leveraged for analysis.
