@@ -12,12 +12,19 @@ HITL_BUCKET = os.environ.get('HITL_BUCKET', 'omniguard-hitl-feedback')
 EVENT_BUS_NAME = os.environ.get('EVENT_BUS_NAME', 'OmniGuard-EnterpriseBus')
 SUPERVISOR_AUDIT_THRESHOLD = float(os.environ.get('SUPERVISOR_AUDIT_THRESHOLD', '10000.0'))
 
-CORS_HEADERS = {
-    'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
-    'Access-Control-Allow-Methods': 'OPTIONS,POST'
-}
+# Security: Configurable Origin and Defense-in-Depth HTTP Security Headers
+ALLOWED_ORIGIN = os.environ.get('ALLOWED_ORIGIN', 'https://d2fui87kr2y14y.cloudfront.net')
+
+def get_security_headers():
+    return {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
+        'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
+        'Access-Control-Allow-Methods': 'OPTIONS,POST',
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'DENY',
+        'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload'
+    }
 
 VALID_LABELS = {
     'TRUE_POSITIVE', 
@@ -100,7 +107,7 @@ def lambda_handler(event, context):
     if http_method == 'OPTIONS':
         return {
             'statusCode': 200,
-            'headers': CORS_HEADERS,
+            'headers': get_security_headers(),
             'body': json.dumps({'message': 'Preflight OK'})
         }
 
@@ -114,7 +121,7 @@ def lambda_handler(event, context):
         except json.JSONDecodeError:
             return {
                 'statusCode': 400,
-                'headers': CORS_HEADERS,
+                'headers': get_security_headers(),
                 'body': json.dumps({'error': 'Invalid JSON in request body'})
             }
 
@@ -129,7 +136,7 @@ def lambda_handler(event, context):
                     results.append({'transaction_id': item.get('transaction_id'), 'error': err})
             return {
                 'statusCode': 200,
-                'headers': CORS_HEADERS,
+                'headers': get_security_headers(),
                 'body': json.dumps({'message': 'Batch feedback processed', 'processed': len(results), 'results': results})
             }
 
@@ -138,13 +145,13 @@ def lambda_handler(event, context):
         if not success:
             return {
                 'statusCode': 400,
-                'headers': CORS_HEADERS,
+                'headers': get_security_headers(),
                 'body': json.dumps({'error': err})
             }
 
         return {
             'statusCode': 200,
-            'headers': CORS_HEADERS,
+            'headers': get_security_headers(),
             'body': json.dumps({
                 'message': 'Feedback successfully recorded',
                 'feedback_id': record['feedback_id'],
@@ -156,6 +163,6 @@ def lambda_handler(event, context):
         print(f"Internal server error in HITL handler: {e}")
         return {
             'statusCode': 500,
-            'headers': CORS_HEADERS,
+            'headers': get_security_headers(),
             'body': json.dumps({'error': 'Internal server error'})
         }

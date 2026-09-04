@@ -45,12 +45,19 @@ AUTO_SAFE_THRESHOLD = float(os.environ.get('AUTO_SAFE_THRESHOLD', '0.40'))
 # Resilience: Fail-open up to GH¢500 to keep grid moving; fail-closed above to protect from drain
 FAIL_OPEN_MAX_AMOUNT = float(os.environ.get('FAIL_OPEN_MAX_AMOUNT', '500.0'))
 
-CORS_HEADERS = {
-    'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
-    'Access-Control-Allow-Methods': 'OPTIONS,POST'
-}
+# Security: Configurable Origin and Defense-in-Depth HTTP Security Headers
+ALLOWED_ORIGIN = os.environ.get('ALLOWED_ORIGIN', 'https://d2fui87kr2y14y.cloudfront.net')
+
+def get_security_headers():
+    return {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
+        'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
+        'Access-Control-Allow-Methods': 'OPTIONS,POST',
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'DENY',
+        'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload'
+    }
 
 def validate_transaction(transaction):
     """
@@ -382,7 +389,7 @@ def lambda_handler(event, context):
     if http_method == 'OPTIONS':
         return {
             'statusCode': 200,
-            'headers': CORS_HEADERS,
+            'headers': get_security_headers(),
             'body': json.dumps({'message': 'Preflight OK'})
         }
 
@@ -395,7 +402,7 @@ def lambda_handler(event, context):
             except json.JSONDecodeError:
                 return {
                     'statusCode': 400,
-                    'headers': CORS_HEADERS,
+                    'headers': get_security_headers(),
                     'body': json.dumps({'error': 'Invalid JSON in request body'})
                 }
         elif isinstance(body, dict):
@@ -407,7 +414,7 @@ def lambda_handler(event, context):
         if not is_valid:
             return {
                 'statusCode': 400,
-                'headers': CORS_HEADERS,
+                'headers': get_security_headers(),
                 'body': json.dumps({'error': validation_err})
             }
 
@@ -484,7 +491,7 @@ def lambda_handler(event, context):
         # 8. Return response
         return {
             'statusCode': 200,
-            'headers': CORS_HEADERS,
+            'headers': get_security_headers(),
             'body': json.dumps({
                 'transaction_id': transaction_id,
                 'decision': scoring_result,
@@ -497,6 +504,6 @@ def lambda_handler(event, context):
         print(f"Internal server error: {e}")
         return {
             'statusCode': 500,
-            'headers': CORS_HEADERS,
+            'headers': get_security_headers(),
             'body': json.dumps({'error': 'Internal server error'})
         }

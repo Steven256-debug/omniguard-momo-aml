@@ -238,6 +238,17 @@ class TestScoringLambdaEdgeCases(unittest.TestCase):
         response = scoring_lambda.lambda_handler(event, None)
         self.assertEqual(response['statusCode'], 200)
         self.assertIn('Access-Control-Allow-Origin', response['headers'])
+        self.assertEqual(response['headers']['X-Content-Type-Options'], 'nosniff')
+        self.assertEqual(response['headers']['X-Frame-Options'], 'DENY')
+        self.assertIn('max-age=', response['headers']['Strict-Transport-Security'])
+
+    def test_security_headers_on_validation_failure(self):
+        event = {'httpMethod': 'POST', 'body': json.dumps({"bad": "data"})}
+        response = scoring_lambda.lambda_handler(event, None)
+        self.assertEqual(response['statusCode'], 400)
+        self.assertEqual(response['headers']['X-Content-Type-Options'], 'nosniff')
+        self.assertEqual(response['headers']['X-Frame-Options'], 'DENY')
+        self.assertIn('max-age=', response['headers']['Strict-Transport-Security'])
 
 if __name__ == '__main__':
     unittest.main()

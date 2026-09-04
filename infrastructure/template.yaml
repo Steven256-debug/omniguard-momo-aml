@@ -3,6 +3,7 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   OmniGuard MoMo AML
   SAM Template for Enterprise AML system with Neptune, SageMaker, EventBridge, and DynamoDB Fallback.
+  Hardened for Bank of Ghana CISD 2026 and AWS Security Best Practices.
 
 Globals:
   Function:
@@ -14,7 +15,7 @@ Globals:
 
 Resources:
   # ---------------------------------------------------------
-  # 1. Data Lake (S3 Buckets)
+  # 1. Data Lake (S3 Buckets & Enforced TLS Bucket Policies)
   # ---------------------------------------------------------
   RawDataBucket:
     Type: AWS::S3::Bucket
@@ -26,6 +27,29 @@ Resources:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  RawDataBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref RawDataBucket
+      PolicyDocument:
+        Statement:
+          # Deny all unencrypted HTTP requests (Bank of Ghana CISD 2026 in-transit encryption requirement)
+          - Sid: EnforceTlsOnly
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !Sub "${RawDataBucket.Arn}"
+              - !Sub "${RawDataBucket.Arn}/*"
+            Condition:
+              Bool:
+                "aws:SecureTransport": "false"
 
   HITLFeedbackBucket:
     Type: AWS::S3::Bucket
@@ -33,15 +57,36 @@ Resources:
       BucketName: !Sub "omniguard-hitl-feedback-${AWS::AccountId}-${AWS::Region}"
       VersioningConfiguration:
         Status: Enabled
-      CorsConfiguration:
-        CorsRules:
-          - AllowedHeaders: ["*"]
-            AllowedMethods: ["GET", "PUT", "POST", "DELETE", "HEAD"]
-            AllowedOrigins: ["*"]
-            MaxAge: 3000
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  HITLFeedbackBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref HITLFeedbackBucket
+      PolicyDocument:
+        Statement:
+          # Deny all unencrypted HTTP requests
+          - Sid: EnforceTlsOnly
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !Sub "${HITLFeedbackBucket.Arn}"
+              - !Sub "${HITLFeedbackBucket.Arn}/*"
+            Condition:
+              Bool:
+                "aws:SecureTransport": "false"
 
   # ---------------------------------------------------------
-  # 1.5 Frontend Hosting (S3 + CloudFront)
+  # 1.5 Frontend Hosting (S3 + CloudFront with Security Headers)
   # ---------------------------------------------------------
   FrontendBucket:
     Type: AWS::S3::Bucket
@@ -52,6 +97,10 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
 
   FrontendBucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -59,7 +108,8 @@ Resources:
       Bucket: !Ref FrontendBucket
       PolicyDocument:
         Statement:
-          - Effect: Allow
+          - Sid: AllowCloudFrontServicePrincipalReadOnly
+            Effect: Allow
             Principal:
               Service: "cloudfront.amazonaws.com"
             Action: "s3:GetObject"
@@ -67,6 +117,16 @@ Resources:
             Condition:
               StringEquals:
                 "AWS:SourceArn": !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${FrontendDistribution}"
+          - Sid: EnforceTlsOnly
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !Sub "${FrontendBucket.Arn}"
+              - !Sub "${FrontendBucket.Arn}/*"
+            Condition:
+              Bool:
+                "aws:SecureTransport": "false"
 
   FrontendOriginAccessControl:
     Type: AWS::CloudFront::OriginAccessControl
@@ -76,6 +136,32 @@ Resources:
         OriginAccessControlOriginType: s3
         SigningBehavior: always
         SigningProtocol: sigv4
+
+  # Modern HTTP Security Headers Policy (Anti-Clickjacking, HSTS, MIME sniffing protection)
+  CloudFrontSecurityHeadersPolicy:
+    Type: AWS::CloudFront::ResponseHeadersPolicy
+    Properties:
+      ResponseHeadersPolicyConfig:
+        Name: "OmniGuard-SecurityHeaders"
+        Comment: "Enforces HSTS, X-Frame-Options, X-Content-Type-Options, and Referrer-Policy"
+        SecurityHeadersConfig:
+          StrictTransportSecurity:
+            AccessControlMaxAgeSec: 63072000
+            IncludeSubdomains: true
+            Preload: true
+            Override: true
+          ContentTypeOptions:
+            Override: true
+          FrameOptions:
+            FrameOption: DENY
+            Override: true
+          ReferrerPolicy:
+            ReferrerPolicy: strict-origin-when-cross-origin
+            Override: true
+          XSSProtection:
+            Protection: true
+            ModeBlock: true
+            Override: true
 
   FrontendDistribution:
     Type: AWS::CloudFront::Distribution
@@ -92,6 +178,7 @@ Resources:
         DefaultCacheBehavior:
           TargetOriginId: FrontendS3Origin
           ViewerProtocolPolicy: redirect-to-https
+          ResponseHeadersPolicyId: !Ref CloudFrontSecurityHeadersPolicy
           AllowedMethods:
             - GET
             - HEAD
@@ -116,6 +203,8 @@ Resources:
         - AttributeName: "RuleId"
           KeyType: "HASH"
       BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
 
   TransactionHistoryTable:
     Type: AWS::DynamoDB::Table
@@ -135,6 +224,8 @@ Resources:
       TimeToLiveSpecification:
         AttributeName: "TTL"
         Enabled: true
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
 
   # ---------------------------------------------------------
   # 3. Amazon EventBridge (Enterprise Router)
@@ -147,8 +238,6 @@ Resources:
   # ---------------------------------------------------------
   # 4. Amazon Neptune (Graph Database for Entity Mapping)
   # ---------------------------------------------------------
-  # Note: In a production template, VPC, Subnets, and Security Groups must be configured.
-  # For demonstration, creating a basic Neptune DB Cluster.
   NeptuneDBCluster:
     Type: AWS::Neptune::DBCluster
     Properties:
@@ -174,7 +263,7 @@ Resources:
       Cors:
         AllowMethods: "'OPTIONS,POST'"
         AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
-        AllowOrigin: "'*'"
+        AllowOrigin: !Sub "'https://${FrontendDistribution.DomainName}'"
 
   ScoringFunction:
     Type: AWS::Serverless::Function
@@ -188,6 +277,8 @@ Resources:
           DYNAMODB_RULES_TABLE: !Ref StaticRulesTable
           DYNAMODB_HISTORY_TABLE: !Ref TransactionHistoryTable
           EVENT_BUS_NAME: !Ref EnterpriseEventBus
+          HITL_BUCKET: !Ref HITLFeedbackBucket
+          ALLOWED_ORIGIN: !Sub "https://${FrontendDistribution.DomainName}"
       Policies:
         # Least privilege: specifically target only the ARNs of created/used resources
         - Statement:
@@ -202,12 +293,15 @@ Resources:
               Resource: !GetAtt TransactionHistoryTable.Arn
             - Effect: Allow
               Action:
+                - s3:PutObject
+              Resource: !Sub "${HITLFeedbackBucket.Arn}/*"
+            - Effect: Allow
+              Action:
                 - events:PutEvents
               Resource: !GetAtt EnterpriseEventBus.Arn
             - Effect: Allow
               Action:
                 - sagemaker:InvokeEndpoint
-              # In practice, this should be the exact SageMaker endpoint ARN.
               Resource: !Sub "arn:aws:sagemaker:${AWS::Region}:${AWS::AccountId}:endpoint/omniguard-sagemaker-endpoint"
       Events:
         ScoreTransaction:
@@ -227,7 +321,7 @@ Resources:
       Cors:
         AllowMethods: "'OPTIONS,POST'"
         AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
-        AllowOrigin: "'*'" # In production, restrict to CloudFront domain
+        AllowOrigin: !Sub "'https://${FrontendDistribution.DomainName}'"
 
   HITLFeedbackFunction:
     Type: AWS::Serverless::Function
@@ -239,6 +333,7 @@ Resources:
         Variables:
           HITL_BUCKET: !Ref HITLFeedbackBucket
           EVENT_BUS_NAME: !Ref EnterpriseEventBus
+          ALLOWED_ORIGIN: !Sub "https://${FrontendDistribution.DomainName}"
       Policies:
         - Statement:
             - Effect: Allow
