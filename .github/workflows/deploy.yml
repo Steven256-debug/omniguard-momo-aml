@@ -1,0 +1,135 @@
+name: CI/CD Pipeline - OmniGuard MoMo AML
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ==========================================
+  # 1. Backend Automated Unit Tests
+  # ==========================================
+  unit-tests:
+    name: Run Python Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install boto3
+
+      - name: Run Unit Tests (Scoring, HITL, Fallback & Security Headers)
+        run: |
+          python -m unittest discover -s tests -p "test_*.py" -v
+
+  # ==========================================
+  # 2. Infrastructure (SAM) Validation
+  # ==========================================
+  validate-infrastructure:
+    name: Validate SAM CloudFormation Template
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup AWS SAM CLI
+        uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: Validate SAM Template
+        run: |
+          sam validate --template-file infrastructure/template.yaml
+
+  # ==========================================
+  # 3. Frontend Build & Static Verification
+  # ==========================================
+  build-frontend:
+    name: Verify Frontend Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies & Build
+        run: |
+          cd frontend
+          npm install
+          npm run build
+
+  # ==========================================
+  # 4. Production Deployment to AWS
+  # ==========================================
+  deploy-production:
+    name: Deploy Stack & Dashboard to AWS
+    needs: [unit-tests, validate-infrastructure, build-frontend]
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Setup AWS SAM CLI
+        uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: Build SAM Artifacts
+        run: |
+          sam build --template-file infrastructure/template.yaml
+
+      - name: Deploy CloudFormation Stack
+        run: |
+          sam deploy \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --stack-name omniguard-momo-aml-stack \
+            --region us-east-1 \
+            --capabilities CAPABILITY_IAM \
+            --resolve-s3
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build Frontend Production Bundle
+        run: |
+          cd frontend
+          npm install
+          npm run build
+
+      - name: Sync Frontend to Live S3 Bucket
+        run: |
+          aws s3 sync frontend/dist s3://omniguard-frontend-093047596621-us-east-1 --delete
+
+      - name: Invalidate CloudFront Cache
+        run: |
+          aws cloudfront create-invalidation --distribution-id EZ8018C30D86S --paths "/*"
