@@ -80,11 +80,12 @@ flowchart TB
     end
 
     %% Real-time Evaluation & Resilience
-    subgraph RealTimeScoring["2. Real-Time Scoring & Circuit Breaker"]
+    subgraph RealTimeScoring["2. Real-Time Scoring & Auto-Triage Engine"]
         ScoringLambda["Scoring Lambda<br/>(Input Sanitization & SLA Guard)"]:::awsCore
         SageMaker["Amazon SageMaker<br/>(Anomaly Autoencoder)"]:::ml
         CircuitBreaker{"Circuit Breaker<br/>Timeout > 200ms?"}:::security
-        DynamoFallback[("Amazon DynamoDB<br/>Static Rules & Velocity History")]:::storage
+        DynamoFallback[("Amazon DynamoDB<br/>Sliding Velocity & Structuring")]:::storage
+        AutoTriage["⚡ 3-Tier Auto-Triage &amp;<br/>AI Pattern Synthesizer"]:::ml
     end
 
     %% Graph & Identity Resolution
@@ -97,13 +98,13 @@ flowchart TB
     %% Enterprise Bus & Core Banking Action
     subgraph EnterpriseRouting["4. Enterprise Event Distribution"]
         EventBus["Amazon EventBridge<br/>(OmniGuard-EnterpriseBus)"]:::awsCore
-        DownstreamLedger["CBS Settlement / Freeze Hold"]:::client
+        DownstreamLedger["CBS Settlement<br/>Instant Freeze / Hold"]:::client
     end
 
     %% HITL & Continuous Retraining
-    subgraph HumanInTheLoop["5. Human-In-The-Loop (HITL) Investigation"]
+    subgraph HumanInTheLoop["5. FIU Human-In-The-Loop (~6.5% Gray-Zone)"]
         CloudFront["Amazon CloudFront (OAC)"]:::security
-        ReactApp["Fraud Analyst Dashboard<br/>(React.js SPA)"]:::hitl
+        ReactApp["Fraud Analyst Dashboard<br/>(React.js SPA • 130 Cases/Day)"]:::hitl
         HITLLambda["HITL Audit Lambda<br/>(Dual-Control Governance)"]:::awsCore
         S3HITL[("Amazon S3 Feedback Bucket<br/>omniguard-hitl-feedback")]:::storage
         RetrainPipeline["SageMaker Continuous<br/>Retraining Pipeline"]:::ml
@@ -118,19 +119,23 @@ flowchart TB
     SageMaker -.->|Anomaly Score| ScoringLambda
     ScoringLambda -->|2. Timeout / Error| CircuitBreaker
     CircuitBreaker -->|Fallback Triggered| DynamoFallback
-    DynamoFallback -.->|Static / Smurfing Rule Verdict| ScoringLambda
+    DynamoFallback -.->|Sliding Volume Verdict| ScoringLambda
+    ScoringLambda --> AutoTriage
+
+    %% Auto-Triage 3-Tier Distribution
+    AutoTriage -->|Tier 1: Score >= 0.90 (Auto-Block 19.5%)| EventBus
+    AutoTriage -.->|Tier 2: Score <= 0.40 (Auto-Safe 74.0%)| S3HITL
+    AutoTriage -->|Tier 3: Gray-Zone (~6.5%)| ReactApp
 
     S3Raw --> EntityRes
     EntityRes -->|Resolved Persistent Entities| Neptune
     Neptune -.->|Sub-Graph Risk Metrics| ScoringLambda
 
-    ScoringLambda -->|Publish FraudScoringDecision| EventBus
     EventBus -->|Trigger Instant Hold| DownstreamLedger
-    EventBus -->|Alert Flagged Cases| ReactApp
 
-    ReactApp -->|View Cases / Trends| CloudFront
+    ReactApp -->|View Gray-Zone Cases| CloudFront
     CloudFront --> APIGW
-    ReactApp -->|POST /feedback| HITLLambda
+    ReactApp -->|POST /feedback (Audit Reversal)| HITLLambda
     HITLLambda -->|Store Feedback Record| S3HITL
     HITLLambda -->|Publish Feedback / Supervisor Alert| EventBus
     S3HITL -->|Trigger Retraining Job| RetrainPipeline
@@ -167,23 +172,79 @@ To maintain the uptime of the national payment grid, if the SageMaker inference 
 
 ---
 
+## ⚡ Intelligent 3-Tier Auto-Triage & Explainable AI (XAI) Pattern Synthesis
+
+In high-volume digital banking environments processing upwards of 2,000 alerts per day, manual human review of every single alert causes severe **alert fatigue**, investigative bottlenecks, and delayed settlements. OmniGuard solves this via an **Automated Three-Tier Confidence Policy** coupled with a **Natural Language Pattern Synthesizer**:
+
+```
+                         [ 2,000 Daily Alerts ]
+                                   │
+       ┌───────────────────────────┼───────────────────────────┐
+       ▼                           ▼                           ▼
+Score ≥ 0.90                 0.40 < Score < 0.90          Score ≤ 0.40
+(or confirmed structuring)    (Ambiguous Gray-Zone)       (Clean baseline)
+       │                           │                           │
+       ▼                           ▼                           ▼
+[ AUTO-BLOCKED FRAUD ]     [ REQUIRES HUMAN REVIEW ]   [ AUTO-CLEARED SAFE ]
+~390 alerts (19.5%)        ~130 alerts (6.5%)          ~1,480 alerts (74.0%)
+• Instant CBS Account Hold • Queued in FIU Inbox       • Instant Settlement
+• Auto-archives S3 audit   • Pre-filled XAI Narrative  • Auto-archives S3 audit
+• Auto-notifies EventBus   • Focused Investigation     • Auto-notifies EventBus
+```
+
+### Operational Impact
+* **93.5% Automated Workload Reduction**: High-confidence fraud and verified safe routine transactions are triaged and audited instantly without human intervention.
+* **Focused Human Governance**: Investigators inspect **only ~130 ambiguous gray-zone transactions per day** (~6.5% of total volume).
+* **Regulatory-Grade Pattern Synthesis**: Compliance officers receive plain-language narrative rationales explaining the exact typologies identified:
+  * **Auto-Confirmed Fraud (True Positive):**
+    > *"Auto-Confirmed Fraud (Risk: 0.96): Coordinated structuring (smurfing) pattern identified. 5 sub-threshold transfers totaling GH¢24,750 detected from burner device 'DEV_MULE_X9' targeting recipient 'USER_AGGREGATOR' within 11 minutes. Neptune sub-graph confirms 3-hop circular hops before immediate cash-out attempt."*
+  * **Auto-Cleared Safe (False Positive):**
+    > *"Auto-Cleared Safe (Risk: 0.22): Routine cash-out of GH¢7,500.00 handled by licensed MoMo Agent 'USER_AGENT_KUMASI_04'. Transaction strictly complies with Agent tier velocity bounds. Both wallets have Level-3 Ghana Card biometric KYC. Zero mule network or structuring ties detected."*
+
+---
+
 ## 💻 API Payloads
 
-### Scoring Request
+### 1. Scoring Request (`POST /score`)
 ```json
 {
   "transaction_id": "TXN_A1B2C3D4E5",
   "sender_id": "USER_7890",
   "receiver_id": "USER_1234",
-  "amount": 4500.00,
+  "amount": 4950.00,
   "timestamp": "2026-08-30T10:00:00Z",
   "account_type": "RETAIL",
   "device_id": "DEV_X9Y8Z7",
-  "ip_address": "192.168.1.45"
+  "ip_address": "197.251.142.12"
 }
 ```
 
-### EventBridge Event Payload
+### 2. Scoring Response with Auto-Triage & Pattern Explanation
+```json
+{
+  "transaction_id": "TXN_A1B2C3D4E5",
+  "decision": {
+    "status": "FLAGGED",
+    "reason": "Fallback Rule: Potential Structuring/Smurfing. Cumulative GH¢9,900.00 exceeds GH¢8,000.00 in 15m across 2 transactions.",
+    "source": "DynamoDB_Fallback"
+  },
+  "auto_triage": {
+    "triage_tier": "AUTO_CONFIRMED_FRAUD",
+    "recommendation": "Auto-Confirmed Fraud (True Positive • Instant Account Freeze)",
+    "action_code": "CBS_FREEZE_HOLD",
+    "narrative": "Auto-Confirmed Fraud (Risk: 0.95): Coordinated structuring (smurfing) pattern identified. Multiple rapid sub-threshold transfers detected from device 'DEV_X9Y8Z7' targeting recipient 'USER_1234'. Cumulative volume breached regulatory thresholds in a 15-minute sliding window.",
+    "anomaly_score": 0.95,
+    "explainability_factors": [
+      { "feature": "Transaction Amount vs Peer Baseline", "weight": 45, "type": "danger" },
+      { "feature": "Sliding Window Velocity", "weight": 40, "type": "danger" },
+      { "feature": "Device Fingerprint Consistency", "weight": 35, "type": "warning" }
+    ]
+  },
+  "latency_ms": 42.18
+}
+```
+
+### 3. EventBridge Event Payload (`OmniGuard-EnterpriseBus`)
 ```json
 {
   "version": "0",
@@ -193,9 +254,19 @@ To maintain the uptime of the national payment grid, if the SageMaker inference 
     "transaction_id": "TXN_A1B2C3D4E5",
     "scoring_result": {
       "status": "FLAGGED",
-      "reason": "ML Anomaly Score: 0.89",
-      "source": "SageMaker"
-    }
+      "reason": "Potential Structuring/Smurfing",
+      "source": "DynamoDB_Fallback"
+    },
+    "auto_triage": {
+      "triage_tier": "AUTO_CONFIRMED_FRAUD",
+      "action_code": "CBS_FREEZE_HOLD"
+    },
+    "original_transaction": {
+      "amount": 4950.00,
+      "sender_id": "USER_7890",
+      "receiver_id": "USER_1234"
+    },
+    "latency_ms": 42.18
   }
 }
 ```

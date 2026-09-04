@@ -1,5 +1,5 @@
 """
-OmniGuard MoMo AML — AWS Architecture Generator
+OmniGuard MoMo AML — AWS Architecture Generator (Updated with 3-Tier Auto-Triage)
 Generates the production architecture diagram with official AWS icons using python-diagrams.
 
 Requirements:
@@ -40,7 +40,7 @@ edge_attr = {
 }
 
 with Diagram(
-    "OmniGuard MoMo AML — Enterprise Architecture",
+    "OmniGuard MoMo AML — Enterprise Architecture & 3-Tier Auto-Triage",
     show=False,
     direction="LR",
     filename="architecture_diagram",
@@ -54,10 +54,11 @@ with Diagram(
         cbs = Client("Core Banking (CBS)\nLedgers & Switches")
         api_gw = APIGateway("Amazon API Gateway\n(/score & /feedback)")
 
-    with Cluster("2. Real-Time Scoring & Fallback", graph_attr={"bgcolor": "#161b22", "fontcolor": "#f59e0b"}):
-        scoring_lambda = Lambda("Scoring Lambda\n(SLA & Sanitization)")
+    with Cluster("2. Real-Time Scoring & Auto-Triage", graph_attr={"bgcolor": "#161b22", "fontcolor": "#f59e0b"}):
+        scoring_lambda = Lambda("Scoring Lambda\n(SLA Guard & Triage)")
         sagemaker = Sagemaker("Amazon SageMaker\n(Anomaly Autoencoder)")
-        dynamodb = Dynamodb("Amazon DynamoDB\n(Sliding Velocity Fallback)")
+        dynamodb = Dynamodb("Amazon DynamoDB\n(Sliding Velocity & Fallback)")
+        auto_triage = Lambda("3-Tier Auto-Triage &\nPattern Synthesizer")
 
     with Cluster("3. Identity & Graph Intelligence", graph_attr={"bgcolor": "#161b22", "fontcolor": "#06b6d4"}):
         s3_raw = S3("Amazon S3\n(Raw Data Lake)")
@@ -66,13 +67,13 @@ with Diagram(
 
     with Cluster("4. Enterprise Event Distribution", graph_attr={"bgcolor": "#161b22", "fontcolor": "#f43f5e"}):
         event_bus = Eventbridge("Amazon EventBridge\n(OmniGuard-EnterpriseBus)")
-        cbs_hold = Client("CBS Settlement\nAccount Freeze / Hold")
+        cbs_hold = Client("CBS Settlement\nInstant Freeze / Hold")
 
-    with Cluster("5. HITL Governance & Retraining", graph_attr={"bgcolor": "#161b22", "fontcolor": "#a855f7"}):
+    with Cluster("5. FIU Human-In-The-Loop (~6.5% Gray-Zone)", graph_attr={"bgcolor": "#161b22", "fontcolor": "#a855f7"}):
         cloudfront = CloudFront("Amazon CloudFront\n(OAC + S3)")
-        analysts = Users("Fraud Analysts\n(React Dashboard)")
+        analysts = Users("Fraud Analysts\n(130 Gray-Zone Cases/Day)")
         hitl_lambda = Lambda("HITL Audit Lambda\n(Dual-Control)")
-        s3_feedback = S3("Amazon S3\n(Feedback Records)")
+        s3_feedback = S3("Amazon S3\n(Feedback & Triage Audit)")
 
     # Data Ingestion Connections
     momo_psps >> Edge(color="#38bdf8", label="POST /score") >> api_gw
@@ -84,24 +85,27 @@ with Diagram(
     sagemaker >> Edge(color="#10b981", style="dashed") >> scoring_lambda
     scoring_lambda >> Edge(color="#f59e0b", style="dashed", label="2. Fallback Timeout") >> dynamodb
     dynamodb >> Edge(color="#f59e0b", style="dashed") >> scoring_lambda
+    scoring_lambda >> Edge(color="#f59e0b") >> auto_triage
+
+    # Three-Tier Triage Routing
+    auto_triage >> Edge(color="#ef4444", label="1. Auto-Block (19.5%)\nScore >= 0.90") >> event_bus
+    auto_triage >> Edge(color="#10b981", style="dashed", label="2. Auto-Safe (74.0%)\nScore <= 0.40") >> s3_feedback
+    auto_triage >> Edge(color="#f59e0b", label="3. Gray-Zone (~6.5%)\n0.40 < Score < 0.90") >> analysts
 
     # Graph Ingestion
     s3_raw >> Edge(color="#10b981") >> macie
     macie >> Edge(color="#06b6d4", label="Resolved Entities") >> neptune
     neptune >> Edge(color="#06b6d4", style="dashed", label="Sub-Graph Risk") >> scoring_lambda
 
-    # Event Distribution
-    scoring_lambda >> Edge(color="#f43f5e", label="FraudScoringDecision") >> event_bus
-    event_bus >> Edge(color="#f43f5e", label="Instant Hold") >> cbs_hold
-    event_bus >> Edge(color="#a855f7", label="Flagged Alert") >> analysts
+    # Event Distribution to CBS
+    event_bus >> Edge(color="#ef4444", label="Instant Hold") >> cbs_hold
 
     # HITL Feedback Loop
     analysts >> Edge(color="#38bdf8") >> cloudfront
-    analysts >> Edge(color="#a855f7", label="Review / Audit") >> api_gw
+    analysts >> Edge(color="#a855f7", label="Override / Review") >> api_gw
     api_gw >> Edge(color="#a855f7") >> hitl_lambda
     hitl_lambda >> Edge(color="#a855f7") >> s3_feedback
-    hitl_lambda >> Edge(color="#f43f5e", label="Supervisor Alert") >> event_bus
-    s3_feedback >> Edge(color="#10b981", style="dashed", label="Auto Retrain") >> sagemaker
+    s3_feedback >> Edge(color="#10b981", style="dashed", label="Continuous Retrain") >> sagemaker
 
 if __name__ == "__main__":
     print("Generating architecture diagram with official AWS icons...")
