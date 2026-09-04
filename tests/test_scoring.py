@@ -1,0 +1,177 @@
+import unittest
+from unittest.mock import MagicMock, patch
+import json
+import os
+import sys
+
+# Ensure src is in sys.path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+
+import scoring_lambda
+
+class TestScoringLambdaEdgeCases(unittest.TestCase):
+
+    def test_validation_valid_transaction(self):
+        txn = {
+            "transaction_id": "TXN_001",
+            "sender_id": "USER_A",
+            "receiver_id": "USER_B",
+            "amount": 250.0,
+            "timestamp": "2026-09-04T12:00:00Z",
+            "account_type": "RETAIL"
+        }
+        is_valid, err, val = scoring_lambda.validate_transaction(txn)
+        self.assertTrue(is_valid)
+        self.assertIsNone(err)
+        self.assertEqual(val["amount"], 250.0)
+        self.assertEqual(val["account_type"], "RETAIL")
+
+    def test_validation_missing_required_fields(self):
+        # Missing amount
+        txn = {
+            "transaction_id": "TXN_002",
+            "sender_id": "USER_A",
+            "receiver_id": "USER_B",
+            "timestamp": "2026-09-04T12:00:00Z"
+        }
+        is_valid, err, val = scoring_lambda.validate_transaction(txn)
+        self.assertFalse(is_valid)
+        self.assertIn("amount", err)
+
+    def test_validation_negative_and_zero_amounts(self):
+        for bad_amount in [-100.0, 0.0, "not-a-number", float('nan')]:
+            txn = {
+                "transaction_id": "TXN_BAD_AMT",
+                "sender_id": "USER_A",
+                "receiver_id": "USER_B",
+                "amount": bad_amount,
+                "timestamp": "2026-09-04T12:00:00Z"
+            }
+            is_valid, err, val = scoring_lambda.validate_transaction(txn)
+            self.assertFalse(is_valid)
+
+    def test_validation_self_transfer(self):
+        txn = {
+            "transaction_id": "TXN_SELF",
+            "sender_id": "USER_SAME",
+            "receiver_id": "USER_SAME",
+            "amount": 100.0,
+            "timestamp": "2026-09-04T12:00:00Z"
+        }
+        is_valid, err, val = scoring_lambda.validate_transaction(txn)
+        self.assertFalse(is_valid)
+        self.assertIn("Self-transfers are invalid", err)
+
+    def test_validation_invalid_timestamp(self):
+        txn = {
+            "transaction_id": "TXN_BAD_TS",
+            "sender_id": "USER_A",
+            "receiver_id": "USER_B",
+            "amount": 100.0,
+            "timestamp": "yesterday-at-noon"
+        }
+        is_valid, err, val = scoring_lambda.validate_transaction(txn)
+        self.assertFalse(is_valid)
+        self.assertIn("ISO-8601", err)
+
+    def test_fallback_structuring_detection(self):
+        # Mock history table returning previous transactions of GH¢4,800
+        mock_table = MagicMock()
+        mock_table.query.return_value = {
+            'Items': [
+                {'Amount': 4800.0, 'Timestamp': '2026-09-04T11:55:00.000000Z'},
+            ]
+        }
+        # Incoming transaction is another GH¢4,800 (Cumulative = GH¢9,600 > GH¢8,000 threshold)
+        txn = {
+            "transaction_id": "TXN_SMURF_2",
+            "sender_id": "USER_SMURFER",
+            "receiver_id": "USER_MULE",
+            "amount": 4800.0,
+            "timestamp": "2026-09-04T11:58:00.000000Z",
+            "account_type": "RETAIL"
+        }
+        decision = scoring_lambda.evaluate_fallback_rules(txn, history_table=mock_table)
+        self.assertEqual(decision["status"], "FLAGGED")
+        self.assertIn("Potential Structuring/Smurfing", decision["reason"])
+
+    def test_fallback_velocity_limit_retail(self):
+        mock_table = MagicMock()
+        mock_table.query.return_value = {
+            'Items': [
+                {'Amount': 50.0, 'Timestamp': '2026-09-04T11:50:00.000000Z'},
+                {'Amount': 50.0, 'Timestamp': '2026-09-04T11:52:00.000000Z'},
+                {'Amount': 50.0, 'Timestamp': '2026-09-04T11:54:00.000000Z'},
+            ]
+        }
+        txn = {
+            "transaction_id": "TXN_VELOCITY",
+            "sender_id": "USER_RETAIL_1",
+            "receiver_id": "USER_X",
+            "amount": 100.0,
+            "timestamp": "2026-09-04T11:56:00.000000Z",
+            "account_type": "RETAIL"
+        }
+        decision = scoring_lambda.evaluate_fallback_rules(txn, history_table=mock_table)
+        self.assertEqual(decision["status"], "FLAGGED")
+        self.assertIn("High Velocity", decision["reason"])
+
+    def test_fallback_agent_tier_tolerance(self):
+        # Agents legitimately have higher limits
+        mock_table = MagicMock()
+        mock_table.query.return_value = {
+            'Items': [{'Amount': 2000.0, 'Timestamp': '2026-09-04T11:50:00.000000Z'}] * 5
+        }
+        txn = {
+            "transaction_id": "TXN_AGENT_LEGIT",
+            "sender_id": "USER_AGENT_01",
+            "receiver_id": "USER_CUSTOMER",
+            "amount": 15000.0, # High for retail, normal for agent (threshold 50,000)
+            "timestamp": "2026-09-04T11:58:00.000000Z",
+            "account_type": "AGENT"
+        }
+        decision = scoring_lambda.evaluate_fallback_rules(txn, history_table=mock_table)
+        self.assertEqual(decision["status"], "CLEARED")
+
+    def test_fallback_tiered_fail_open_low_value(self):
+        # When DynamoDB raises an unexpected error, low value (< GH¢500) fails open
+        mock_table = MagicMock()
+        mock_table.query.side_effect = Exception("DynamoDB service unavailable")
+        
+        txn = {
+            "transaction_id": "TXN_LOW_VAL",
+            "sender_id": "USER_A",
+            "receiver_id": "USER_B",
+            "amount": 150.0,
+            "timestamp": "2026-09-04T12:00:00.000000Z",
+            "account_type": "RETAIL"
+        }
+        decision = scoring_lambda.evaluate_fallback_rules(txn, history_table=mock_table)
+        self.assertEqual(decision["status"], "CLEARED")
+        self.assertEqual(decision["source"], "DynamoDB_FailOpen")
+
+    def test_fallback_tiered_fail_closed_high_value(self):
+        # When DynamoDB raises an unexpected error, high value (>= GH¢500) fails closed
+        mock_table = MagicMock()
+        mock_table.query.side_effect = Exception("DynamoDB service unavailable")
+        
+        txn = {
+            "transaction_id": "TXN_HIGH_VAL",
+            "sender_id": "USER_A",
+            "receiver_id": "USER_B",
+            "amount": 6500.0,
+            "timestamp": "2026-09-04T12:00:00.000000Z",
+            "account_type": "RETAIL"
+        }
+        decision = scoring_lambda.evaluate_fallback_rules(txn, history_table=mock_table)
+        self.assertEqual(decision["status"], "FLAGGED")
+        self.assertEqual(decision["source"], "DynamoDB_FailClosed")
+
+    def test_options_cors_preflight(self):
+        event = {'httpMethod': 'OPTIONS'}
+        response = scoring_lambda.lambda_handler(event, None)
+        self.assertEqual(response['statusCode'], 200)
+        self.assertIn('Access-Control-Allow-Origin', response['headers'])
+
+if __name__ == '__main__':
+    unittest.main()

@@ -132,6 +132,9 @@ Resources:
         - AttributeName: "Timestamp"
           KeyType: "RANGE"
       BillingMode: PAY_PER_REQUEST
+      TimeToLiveSpecification:
+        AttributeName: "TTL"
+        Enabled: true
 
   # ---------------------------------------------------------
   # 3. Amazon EventBridge (Enterprise Router)
@@ -168,6 +171,10 @@ Resources:
     Type: AWS::Serverless::Api
     Properties:
       StageName: prod
+      Cors:
+        AllowMethods: "'OPTIONS,POST'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
 
   ScoringFunction:
     Type: AWS::Serverless::Function
@@ -191,6 +198,7 @@ Resources:
             - Effect: Allow
               Action:
                 - dynamodb:Query
+                - dynamodb:PutItem
               Resource: !GetAtt TransactionHistoryTable.Arn
             - Effect: Allow
               Action:
