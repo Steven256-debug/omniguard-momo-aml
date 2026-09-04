@@ -1,58 +1,64 @@
-<div align="center">
-  <h1>🛡️ OmniGuard MoMo AML (Enterprise Edition)</h1>
-  <p><i>A holistic, graph-based Machine Learning Anti-Money Laundering engine tailored for Tier-1 Banks and Payment Service Providers (PSPs).</i></p>
+# 🛡️ OmniGuard MoMo AML — Real-Time Graph AI & Anti-Money Laundering Engine
 
-  ![AWS](https://img.shields.io/badge/AWS-%23FF9900.svg?style=for-the-badge&logo=amazon-aws&logoColor=white)
-  ![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
-  ![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)
-  ![Amazon DynamoDB](https://img.shields.io/badge/Amazon%20DynamoDB-4053D6?style=for-the-badge&logo=Amazon%20DynamoDB&logoColor=white)
-  ![Serverless](https://img.shields.io/badge/Serverless-%23FD5750.svg?style=for-the-badge&logo=serverless&logoColor=white)
+A production-ready, cloud-native real-time Anti-Money Laundering (AML) engine built for Ghanaian Banks, Payment Service Providers (PSPs), and Mobile Money Operators (MTN MoMo, Telecel, AT). It combines graph-based entity resolution, unsupervised machine learning, and automated 3-tier triage to stop complex mule rings and financial fraud in real time.
 
-  <br/><br/>
-  <a href="https://d2fui87kr2y14y.cloudfront.net" target="_blank">
-    <img src="https://img.shields.io/badge/Live_Dashboard-CloudFront-blue?style=for-the-badge&logo=amazon-aws" alt="Live Demo"/>
-  </a>
-  <a href="https://oyqjhxi283.execute-api.us-east-1.amazonaws.com/prod/score" target="_blank">
-    <img src="https://img.shields.io/badge/Scoring_API-Active-green?style=for-the-badge&logo=aws-api-gateway" alt="Scoring API"/>
-  </a>
-</div>
+🔗 **Live Demo:** [https://d2fui87kr2y14y.cloudfront.net](https://d2fui87kr2y14y.cloudfront.net)  
+⚡ **Scoring API:** `POST` `https://oyqjhxi283.execute-api.us-east-1.amazonaws.com/prod/score`  
+📥 **HITL Feedback API:** `POST` `https://6er509nbdk.execute-api.us-east-1.amazonaws.com/prod/feedback`
 
 ---
 
-OmniGuard MoMo AML is an enterprise-grade solution that securely evaluates Mobile Money (MoMo) transactions in real-time. The system seamlessly integrates with core banking ledgers, enables human investigation workflows, and enforces robust system resilience through graceful degradation.
+## 📌 Table of Contents
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [AWS Services Used](#aws-services-used)
+- [Features](#features)
+- [How It Works](#how-it-works)
+- [3-Tier Automated Triage & Explainable AI](#3-tier-automated-triage--explainable-ai)
+- [API Payloads](#api-payloads)
+- [Setup & Deployment](#setup--deployment)
+- [Security](#security)
+- [Data Analytics & Audit](#data-analytics--audit)
+- [Future Improvements](#future-improvements)
+- [Author](#author)
 
 ---
 
-## 🌐 Live Production Deployments
+## Overview
 
-| Subsystem / Interface | Live Endpoint / URL | Description | Status |
-| :--- | :--- | :--- | :---: |
-| **Fraud Analyst Dashboard** | [https://d2fui87kr2y14y.cloudfront.net](https://d2fui87kr2y14y.cloudfront.net) | Interactive Case Management, Model Explainability & Regional Trends UI | 🟢 Live |
-| **Real-Time Scoring API** | `POST` `https://oyqjhxi283.execute-api.us-east-1.amazonaws.com/prod/score` | Real-time AML evaluation with dynamic fallback circuit breaker | 🟢 Live |
-| **HITL Analyst Feedback API** | `POST` `https://6er509nbdk.execute-api.us-east-1.amazonaws.com/prod/feedback` | S3 feedback audit pipeline with dual-control supervisor alerts | 🟢 Live |
+OmniGuard MoMo AML solves a critical, high-stakes operational challenge for African financial institutions — detecting coordinated mule accounts, synthetic identities, and rapid smurfing rings across fragmented mobile money channels in real time.
+
+According to the **Bank of Ghana's 2025 Fraud Report**, electronic fraud incidents within the Payment Service Provider (PSP) and mobile money sector surged by **54% to 24,124 cases**, with the total value at risk nearly doubling to **GH¢37 million**. Traditional rule-based Anti-Money Laundering (AML) systems fail to detect multi-hop syndicate topologies and overwhelm compliance officers with thousands of false positives.
+
+### This tool lets you:
+- **Score transactions in sub-200ms** using an unsupervised SageMaker Anomaly Detection Autoencoder.
+- **Fail gracefully without bottlenecking the payment grid** using a DynamoDB circuit-breaker fallback.
+- **Unify synthetic identities and map syndicate networks** using AWS Entity Resolution and Amazon Neptune.
+- **Automate 93.5% of alert workloads** via an intelligent 3-tier confidence engine with regulatory-grade pattern explanations.
+- **Empower human fraud investigators** via a glassmorphic React dashboard with interactive sub-graph visualizations.
+- **Distribute instant hold commands to Core Banking Systems (CBS)** via Amazon EventBridge in milliseconds.
+
+### The Real Problem it Solves:
+```text
+Without this tool:
+Syndicate smurfs 15 small transfers under GH¢5,000 across 5 burner SIMs 
+→ Legacy static rules ignore them 
+→ Funds cash out at kiosk 
+→ 2,000 alerts pile up in inbox 
+→ Analyst drowns in false positives ❌
+
+With this tool:
+Transfer initiated 
+→ Entity Resolution links burner devices 
+→ Neptune spots 3-hop circular mule ring 
+→ SageMaker flags anomaly in 42ms 
+→ Auto-Triage freezes account 
+→ Plain-language regulatory explanation generated for FIU ✅
+```
 
 ---
 
-## 🚨 The Problem Statement
-As Ghana rapidly advances its financial inclusion goals, fraudulent activity is migrating from traditional banking toward the digital edge. According to the Bank of Ghana's 2025 Fraud Report, electronic fraud incidents within the Payment Service Provider (PSP) and mobile money sector surged by 54% to 24,124 cases, with the total value at risk nearly doubling to GH¢37 million.
-
-Modern financial criminals utilize complex, multi-hop networks of synthetic identities, mule accounts, and burner devices to siphon funds. Traditional, rule-based Anti-Money Laundering (AML) systems are completely unequipped to track these relational networks. As a result, legacy systems generate massive volumes of false positives that exhaust human investigative resources, frustrate legitimate customers, and ultimately fail to stop coordinated fraud rings.
-
-## 💡 The Solution
-OmniGuard MoMo AML abandons static rules in favor of a cloud-native, AI-driven architectural pipeline. It solves the limitations of legacy systems through three core technological pillars:
-
-- **Identity Unification**: Leverages **AWS Entity Resolution** to ingest disparate data streams and standardize records, assigning a single, persistent identifier to users even if they attempt to obfuscate their details across multiple networks.
-- **Graph-Based Network Mapping**: Transactions and entities are mapped into **Amazon Neptune**, a memory-optimized graph database. By running community detection algorithms, the system instantly traverses complex relationships to visualize hidden fraud rings (e.g., detecting if 50 independent wallets are logging in from the same device fingerprint).
-- **Unsupervised Machine Learning**: Graph metrics are piped into **Amazon SageMaker**, which learns the high-dimensional patterns of legitimate financial behavior. When a transaction deviates from these learned patterns, the model assigns a real-time anomaly score, freezing the transaction before settlement.
-
-## 🌍 Significance & Impact
-This project provides the highly resilient infrastructure required to safely scale financial inclusion across Ghana.
-
-Beyond just detecting fraud, this architecture is designed with **Enterprise Systems Thinking**. By utilizing decoupled event routers (Amazon EventBridge) and fallback circuit breakers, the system guarantees that heavy machine-learning workloads never bottleneck the national payment grid. Furthermore, the inclusion of a Human-In-The-Loop (HITL) analyst dashboard ensures model explainability and continuous feedback, helping financial institutions maintain strict regulatory compliance with the Bank of Ghana's Cyber and Information Security Directive (CISD 2026).
-
----
-
-## 🏗️ Architecture Overview
+## Architecture
 
 <p align="center">
   <img src="architecture.svg" alt="OmniGuard MoMo AML AWS Enterprise Architecture" width="100%"/>
@@ -85,7 +91,7 @@ flowchart TB
         SageMaker["Amazon SageMaker<br/>(Anomaly Autoencoder)"]:::ml
         CircuitBreaker{"Circuit Breaker<br/>Timeout > 200ms?"}:::security
         DynamoFallback[("Amazon DynamoDB<br/>Sliding Velocity & Structuring")]:::storage
-        AutoTriage["⚡ 3-Tier Auto-Triage &amp;<br/>AI Pattern Synthesizer"]:::ml
+        AutoTriage["⚡ 3-Tier Auto-Triage &<br/>AI Pattern Synthesizer"]:::ml
     end
 
     %% Graph & Identity Resolution
@@ -144,39 +150,79 @@ flowchart TB
 
 </details>
 
-*Note: You can also generate and customize this architecture diagram programmatically using official AWS icons via [`scripts/generate_diagram.py`](scripts/generate_diagram.py).*
-
-The system architecture is a highly decoupled, event-driven pipeline comprising the following key subsystems:
-
-1. **Data Ingestion and Privacy**: Transaction logs and KYC records flow into an **Amazon S3 Data Lake**. **Amazon Macie** discovers and redacts PII before the data is leveraged for analysis.
-2. **Identity & Graph Mapping**: **AWS Entity Resolution** matches fuzzy records (e.g., similar names, shared devices) to assign persistent customer IDs while isolating dynamic telco CGNAT IP addresses. These resolved entities form a graph stored in **Amazon Neptune Analytics**.
-3. **Machine Learning Predictive Engine**: An unsupervised Anomaly Detection Autoencoder hosted on **Amazon SageMaker** evaluates incoming transactions by combining real-time metadata with sub-graph patterns.
-4. **Resilient API & Enterprise Router**: Transactions are scored in real-time via an **API Gateway + AWS Lambda** implementation. Results are broadcast to the enterprise via **Amazon EventBridge**.
-5. **Fraud Analyst Dashboard**: A **React.js** Single Page Application (SPA) securely hosted via **Amazon S3** and **Amazon CloudFront** using Origin Access Control (OAC), providing a Case Management view for the Fraud Investigation Unit (FIU).
-6. **CI/CD Automation**: Fully automated GitOps lifecycle powered by **AWS CodePipeline** and **AWS CodeBuild**.
+*Note: You can also generate this architecture diagram programmatically using official AWS icons via [`scripts/generate_diagram.py`](scripts/generate_diagram.py).*
 
 ---
 
-## 🔄 Enterprise Systems Thinking
+## AWS Services Used
 
-OmniGuard is designed using Enterprise Systems Thinking principles, treating the AML capability not as an isolated black box, but as a continuous organizational metabolism.
-
-### The Human-In-The-Loop (HITL) Feedback Loop
-When the Fraud Investigation Unit (FIU) reviews a flagged transaction via the Dashboard, their decision (True Positive / False Positive) is routed to a dedicated S3 bucket (`omniguard-hitl-feedback`). This automatically triggers a retraining pipeline so the SageMaker Autoencoder evolves alongside emerging fraud typologies. High-value dispute reversals are safeguarded with dual-control supervisor audit checks.
-
-### Enterprise Routing via Amazon EventBridge
-Fraud detection must instantly inform downstream ledgers. The Scoring Lambda asynchronously publishes a `FraudScoringDecision` event to the `OmniGuard-EnterpriseBus`. Core Banking Systems (CBS) can instantly place holds on funds.
-
-### Graceful Degradation & Circuit Breaking
-To maintain the uptime of the national payment grid, if the SageMaker inference endpoint takes more than **200ms**, the API abandons the ML call and falls back to evaluating the transaction against lightweight, dynamic velocity and structuring rules stored in **Amazon DynamoDB**, utilizing tiered fail-open (< GH¢500) and fail-closed (≥ GH¢500) policies.
+| Service | Purpose |
+| :--- | :--- |
+| **AWS CloudFront** | Low-latency global CDN hosting the React Fraud Analyst Dashboard with Origin Access Control (OAC) and strict defense-in-depth security response headers. |
+| **Amazon API Gateway** | High-throughput REST API managing real-time `/score` and `/feedback` endpoints with restricted CORS. |
+| **AWS Lambda** | Serverless microservices for sub-200ms transaction scoring, 3-tier auto-triage synthesis, and HITL feedback audit trails. |
+| **Amazon SageMaker** | Real-time ML inference running an unsupervised Anomaly Detection Autoencoder for behavioral anomaly detection. |
+| **Amazon DynamoDB** | Sliding-window velocity tracking, structuring detection, and tiered fail-open/fail-closed circuit breaker fallback (PITR enabled). |
+| **Amazon Neptune** | Memory-optimized graph database mapping complex account relationships, circular payment rings, and burner device clusters. |
+| **AWS Entity Resolution** | Identity unification engine reconciling fuzzy names, phone numbers, and device fingerprints into persistent master IDs. |
+| **Amazon EventBridge** | Enterprise event bus (`OmniGuard-EnterpriseBus`) broadcasting real-time freeze and alert commands to Core Banking Systems (CBS). |
+| **Amazon S3** | Encrypted data lake archiving raw transaction streams and dual-control HITL feedback audit logs with strict in-transit TLS enforcement. |
+| **Amazon Macie** | Automated PII discovery and redaction across raw transaction buckets to uphold data privacy standards. |
+| **AWS SAM & GitHub Actions** | Infrastructure as Code orchestration and automated continuous integration/deployment pipeline. |
 
 ---
 
-## ⚡ Intelligent 3-Tier Auto-Triage & Explainable AI (XAI) Pattern Synthesis
+## Features
+
+- ✅ **Sub-200ms Real-Time SLA Guard** — Machine learning inference completes in milliseconds or triggers circuit-breaker fallback to prevent payment bottlenecks.
+- ✅ **93.5% Automated Alert Reduction** — 3-tier confidence engine resolves high-confidence fraud and verified safe transactions, routing only ~6.5% of gray-zone cases to humans.
+- ✅ **Explainable AI (XAI) Pattern Synthesis** — Synthesizes regulatory-grade, plain-language SAR explanations (structuring, device farming, velocity spikes) for compliance officers.
+- ✅ **Graph-Based Mule Ring Detection** — Traverses Neptune sub-graphs to expose multi-hop cash-out syndicates and burner device farms.
+- ✅ **Resilient Graceful Degradation** — Tiered fail-open (< GH¢500) and fail-closed (≥ GH¢500) DynamoDB fallback protects both customer UX and financial solvency.
+- ✅ **Dual-Control HITL Governance** — High-value dispute reversals (> GH¢10,000) automatically require supervisor escalation and multi-analyst sign-off.
+- ✅ **Bank of Ghana CISD 2026 Hardened** — TLS-only S3 bucket policies, HSTS, anti-clickjacking (`X-Frame-Options: DENY`), MIME protection (`nosniff`), and DynamoDB Point-in-Time Recovery (PITR).
+- ✅ **Glassmorphic React Dashboard** — Dark-mode case management UI built with Tailwind CSS, Lucide icons, and Recharts regional analytics.
+- ✅ **Event-Driven Core Banking Integration** — EventBridge bus routes instant account hold actions to CBS ledgers within 50ms of detection.
+- ✅ **Automated CI/CD Pipeline** — GitHub Actions runs unit test suites, validates SAM templates, builds Vite bundles, and deploys to AWS.
+
+---
+
+## How It Works
+
+### Step 1: Webhook & Transaction Ingestion
+```text
+MoMo Telco PSP (MTN, Telecel, AT) or CBS sends POST /score → API Gateway validates payload → Scoring Lambda initiates sub-200ms timer.
+```
+
+### Step 2: Scoring & Fallback Circuit Breaker
+```text
+Scoring Lambda invokes SageMaker Autoencoder. If inference exceeds 200ms or fails, Circuit Breaker dynamically evaluates DynamoDB sliding velocity rules.
+```
+
+### Step 3: 3-Tier Auto-Triage & Explainable AI
+```text
+Score ≥ 0.90 → AUTO_CONFIRMED_FRAUD (Instant CBS freeze & audit record)
+Score ≤ 0.40 → AUTO_CLEARED_SAFE (Immediate settlement & audit record)
+0.40 < Score < 0.90 → REQUIRES_HUMAN_REVIEW (Queued in FIU inbox with AI explanation)
+```
+
+### Step 4: Enterprise Event Distribution
+```text
+Scoring Lambda publishes `FraudScoringDecision` to Amazon EventBridge → CBS settlement listener executes automated freeze/hold.
+```
+
+### Step 5: FIU Investigation & Continuous Retraining
+```text
+Analyst reviews gray-zone cases on CloudFront React Dashboard → Submits feedback via POST /feedback → S3 feedback log triggers continuous retraining pipeline.
+```
+
+---
+
+## ⚡ 3-Tier Automated Triage & Explainable AI
 
 In high-volume digital banking environments processing upwards of 2,000 alerts per day, manual human review of every single alert causes severe **alert fatigue**, investigative bottlenecks, and delayed settlements. OmniGuard solves this via an **Automated Three-Tier Confidence Policy** coupled with a **Natural Language Pattern Synthesizer**:
 
-```
+```text
                          [ 2,000 Daily Alerts ]
                                    │
        ┌───────────────────────────┼───────────────────────────┐
@@ -192,14 +238,16 @@ Score ≥ 0.90                 0.40 < Score < 0.90          Score ≤ 0.40
 • Auto-notifies EventBus   • Focused Investigation     • Auto-notifies EventBus
 ```
 
-### Operational Impact
-* **93.5% Automated Workload Reduction**: High-confidence fraud and verified safe routine transactions are triaged and audited instantly without human intervention.
-* **Focused Human Governance**: Investigators inspect **only ~130 ambiguous gray-zone transactions per day** (~6.5% of total volume).
-* **Regulatory-Grade Pattern Synthesis**: Compliance officers receive plain-language narrative rationales explaining the exact typologies identified:
-  * **Auto-Confirmed Fraud (True Positive):**
-    > *"Auto-Confirmed Fraud (Risk: 0.96): Coordinated structuring (smurfing) pattern identified. 5 sub-threshold transfers totaling GH¢24,750 detected from burner device 'DEV_MULE_X9' targeting recipient 'USER_AGGREGATOR' within 11 minutes. Neptune sub-graph confirms 3-hop circular hops before immediate cash-out attempt."*
-  * **Auto-Cleared Safe (False Positive):**
-    > *"Auto-Cleared Safe (Risk: 0.22): Routine cash-out of GH¢7,500.00 handled by licensed MoMo Agent 'USER_AGENT_KUMASI_04'. Transaction strictly complies with Agent tier velocity bounds. Both wallets have Level-3 Ghana Card biometric KYC. Zero mule network or structuring ties detected."*
+### Operational Impact:
+- **93.5% Automated Workload Reduction**: High-confidence fraud and verified safe routine transactions are triaged and audited instantly without human intervention.
+- **Focused Human Governance**: Investigators inspect **only ~130 ambiguous gray-zone transactions per day** (~6.5% of total volume).
+- **Regulatory-Grade Pattern Synthesis**: Compliance officers receive plain-language narrative rationales explaining the exact typologies identified:
+
+> **Auto-Confirmed Fraud (True Positive):**  
+> *"Auto-Confirmed Fraud (Risk: 0.96): Coordinated structuring (smurfing) pattern identified. 5 sub-threshold transfers totaling GH¢24,750 detected from burner device 'DEV_MULE_X9' targeting recipient 'USER_AGGREGATOR' within 11 minutes. Neptune sub-graph confirms 3-hop circular hops before immediate cash-out attempt."*
+
+> **Auto-Cleared Safe (False Positive):**  
+> *"Auto-Cleared Safe (Risk: 0.22): Routine cash-out of GH¢7,500.00 handled by licensed MoMo Agent 'USER_AGENT_KUMASI_04'. Transaction strictly complies with Agent tier velocity bounds. Both wallets have Level-3 Ghana Card biometric KYC. Zero mule network or structuring ties detected."*
 
 ---
 
@@ -244,82 +292,82 @@ Score ≥ 0.90                 0.40 < Score < 0.90          Score ≤ 0.40
 }
 ```
 
-### 3. EventBridge Event Payload (`OmniGuard-EnterpriseBus`)
-```json
-{
-  "version": "0",
-  "detail-type": "FraudScoringDecision",
-  "source": "omniguard.scoring",
-  "detail": {
-    "transaction_id": "TXN_A1B2C3D4E5",
-    "scoring_result": {
-      "status": "FLAGGED",
-      "reason": "Potential Structuring/Smurfing",
-      "source": "DynamoDB_Fallback"
-    },
-    "auto_triage": {
-      "triage_tier": "AUTO_CONFIRMED_FRAUD",
-      "action_code": "CBS_FREEZE_HOLD"
-    },
-    "original_transaction": {
-      "amount": 4950.00,
-      "sender_id": "USER_7890",
-      "receiver_id": "USER_1234"
-    },
-    "latency_ms": 42.18
-  }
-}
+---
+
+## Setup & Deployment
+
+### 1. CI/CD Deployment (Recommended)
+1. Fork/Clone this repository to GitHub.
+2. Add your `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` to **GitHub Repository Secrets** (`Settings` → `Secrets and variables` → `Actions`).
+3. The included **GitHub Actions pipeline** ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)) will automatically test, validate, and deploy the entire AWS SAM backend and frontend!
+
+### 2. Manual Local Setup
+
+#### Backend Setup:
+```bash
+# Validate SAM template
+sam validate --template-file infrastructure/template.yaml --region us-east-1
+
+# Build and deploy with SAM
+sam build --template-file infrastructure/template.yaml
+sam deploy --guided
+```
+
+#### Frontend Dashboard Setup:
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+To build and sync the frontend to your live S3 bucket:
+```bash
+npm run build
+aws s3 sync dist/ s3://omniguard-frontend-[ACCOUNT_ID]-us-east-1 --delete
+aws cloudfront create-invalidation --distribution-id [DISTRIBUTION_ID] --paths "/*"
+```
+
+#### Running Automated Unit Tests:
+```bash
+python -m unittest discover -s tests -p "test_*.py" -v
 ```
 
 ---
 
-## 🚀 Quick Start Guide
+## Security
 
-1. **Infrastructure**: Deploy the core backend via the AWS SAM CLI:
-   ```bash
-   sam build --template-file infrastructure/template.yaml
-   sam deploy --guided
-   ```
-2. **Simulation**: Generate synthetic MoMo transactions using `python simulation/generate_data.py`.
-3. **Graph Setup**: Run the AWS Entity Resolution setup script in `graph_processing/setup_entity_resolution.py` and apply the Cypher queries in `load_neptune.cypher`.
-4. **Frontend Dashboard**:
-   ```bash
-   cd frontend
-   npm install
-   npm run build
-   aws s3 sync dist/ s3://omniguard-frontend-[YOUR-ACCOUNT-ID]-[REGION]
-   ```
-5. **Run Automated Unit Tests**:
-   ```bash
-   python -m unittest discover -s tests -p "test_*.py" -v
-   ```
+In high-throughput financial infrastructure, security is paramount. OmniGuard implements a rigorous defense-in-depth posture adhering to the **AWS Well-Architected Security Pillar** and **Bank of Ghana Cyber & Information Security Directive (CISD 2026)**:
+
+- **In-Transit TLS Enforcement**: S3 bucket policies (`RawDataBucketPolicy` and `HITLFeedbackBucketPolicy`) explicitly deny any unencrypted HTTP traffic (`aws:SecureTransport: false`).
+- **Defense-in-Depth HTTP Security Headers**: CloudFront edge policy enforces `Strict-Transport-Security` (HSTS max-age 2 years), anti-clickjacking (`X-Frame-Options: DENY`), MIME sniffing prevention (`X-Content-Type-Options: nosniff`), and `strict-origin-when-cross-origin`.
+- **Restrictive CORS Origin Binding**: API Gateway and Lambda handlers strictly whitelist the CloudFront dashboard origin (`https://d2fui87kr2y14y.cloudfront.net`).
+- **Data Protection & PITR**: Amazon DynamoDB Point-in-Time Recovery (PITR) is enabled on all tables, providing continuous non-disruptive backups for audit retention.
+- **Automated PII Sanitization**: Amazon Macie discovers and redacts customer personal data before raw records enter graph processing pipelines.
 
 ---
 
-## ⚙️ CI/CD Deployment (AWS CodePipeline)
+## Data Analytics & Audit
 
-For a fully automated GitOps workflow, you can deploy the CI/CD pipeline directly from this repository:
+All scoring decisions, fallback triggers, and analyst reviews are persisted into an immutable **S3 Data Lake** (`omniguard-raw-data` and `omniguard-hitl-feedback`):
 
-1. Navigate to the AWS Console and create an **AWS CodeStar Connection** to your GitHub account. Note the Connection ARN.
-2. Deploy the pipeline template:
-   ```bash
-   sam deploy --template-file infrastructure/pipeline.yaml --stack-name omniguard-pipeline --capabilities CAPABILITY_IAM --parameter-overrides GitHubConnectionArn="YOUR_ARN" GitHubRepositoryId="Steven256-debug/omniguard-momo-aml"
-   ```
-3. Any future pushes to the `main` branch will automatically trigger **AWS CodeBuild** to compile the React app, package the SAM template, deploy the infrastructure, and sync the static assets!
+- **Dual-Control Supervisor Audit**: When an analyst attempts to reverse a flagged transaction exceeding **GH¢10,000.00**, the system automatically flags `requires_supervisor_audit: true` and dispatches an alert to EventBridge, preventing unilateral insider fraud.
+- **Continuous ML Feedback Loop**: Triage labels (`TRUE_POSITIVE`, `FALSE_POSITIVE`, `AUTO_CONFIRMED_FRAUD`) are partitioned in S3 by date and fed back into automated SageMaker retraining jobs.
+- **Enterprise Event Distribution**: Real-time events on `OmniGuard-EnterpriseBus` allow downstream compliance teams and data engineering pipelines to monitor fraud typologies in real time.
 
 ---
 
-## 🔮 Future Works & Roadmap
+## Future Improvements
 
-To further establish OmniGuard MoMo AML as the pan-African benchmark for real-time digital payment security, the following roadmap capabilities are planned:
+- **Graph Neural Networks (GNNs) on Amazon Neptune ML**: Transition from tabular autoencoder inference to inductive Graph Neural Networks (RGCN / GraphSAGE) operating directly inside Neptune ML to compute dynamic graph topology embeddings.
+- **Cross-Border & Multi-Telco Federated Learning**: Implement privacy-preserving Federated Learning across telco aggregators (MTN MoMo, Telecel Cash, AirtelTigo Money) to detect cross-network mule syndicates across Ghana, Nigeria, and Côte d'Ivoire.
+- **Biometric & Behavioral Telemetry Ingestion**: Ingest mobile sensor telemetry (keystroke velocity, touchscreen tap pressure, and SIM-swap indicators) to preemptively flag account takeover before transfers settle.
+- **Automated Regulatory STR/SAR Generation with Generative AI**: Leverage Amazon Bedrock to automatically synthesize multi-hop Neptune subgraphs, transaction timelines, and investigation notes into regulatory-compliant Bank of Ghana Suspicious Transaction Reports (STRs / SARs).
+- **Ultra-Low Latency Graph Feature Store**: Integrate Amazon MemoryDB / ElastiCache Redis cluster synchronized with Neptune Streams to serve sub-5ms graph topological features directly to the real-time scoring engine.
 
-1. **Graph Neural Networks (GNNs) on Amazon Neptune ML**:
-   - Transition from tabular autoencoder inference to inductive Graph Neural Networks (e.g., Relational Graph Convolutional Networks - RGCN and GraphSAGE) operating directly inside Amazon Neptune ML to compute dynamic graph topology and mule-ring embeddings in real-time.
-2. **Cross-Border & Multi-Telco Federated Learning**:
-   - Implement privacy-preserving Federated Learning across telco aggregators (MTN MoMo, Telecel Cash, AirtelTigo Money) and regional switches (GhIPSS, WAEMU) without exposing raw PII, detecting cross-network mule syndicates operating between Ghana, Nigeria, and Côte d'Ivoire.
-3. **Biometric & Behavioral Telemetry Ingestion**:
-   - Integrate mobile sensor telemetry (keystroke velocity, touchscreen tap pressure, and device orientation during USSD and mobile banking sessions) to preemptively flag account takeover, SIM-swap exploitation, and coerced transfers.
-4. **Automated Regulatory STR/SAR Generation with Generative AI**:
-   - Leverage Amazon Bedrock (Claude / Titan) to automatically synthesize multi-hop Neptune subgraphs, transaction timelines, and HITL investigation notes into regulatory-compliant Bank of Ghana Suspicious Transaction Reports (STRs / SARs) ready for instant FIU submission.
-5. **Ultra-Low Latency Graph Feature Store**:
-   - Integrate Amazon MemoryDB / ElastiCache Redis cluster synchronized with Neptune Streams to serve sub-5ms graph topological features (in-degree, out-degree, centrality metrics) directly to the real-time scoring engine without cold-start querying overhead.
+---
+
+## Author
+
+**Steven Asante-Poku Jnr**  
+*Cloud & AI Developer*  
+[GitHub Profile](https://github.com/Steven256-debug)
