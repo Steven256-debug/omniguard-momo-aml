@@ -54,6 +54,14 @@ Beyond just detecting fraud, this architecture is designed with **Enterprise Sys
 
 ## 🏗️ Architecture Overview
 
+<p align="center">
+  <img src="architecture.svg" alt="OmniGuard MoMo AML AWS Enterprise Architecture" width="100%"/>
+</p>
+
+<details>
+<summary><b>🔍 Click to expand interactive Mermaid Architecture Diagram &amp; Flow Spec</b></summary>
+<br/>
+
 ```mermaid
 flowchart TB
     %% Styling Classes
@@ -128,6 +136,10 @@ flowchart TB
     S3HITL -->|Trigger Retraining Job| RetrainPipeline
     RetrainPipeline -->|Deploy Updated Weights| SageMaker
 ```
+
+</details>
+
+*Note: You can also generate and customize this architecture diagram programmatically using official AWS icons via [`scripts/generate_diagram.py`](scripts/generate_diagram.py).*
 
 The system architecture is a highly decoupled, event-driven pipeline comprising the following key subsystems:
 
