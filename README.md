@@ -89,9 +89,9 @@ flowchart TB
     subgraph RealTimeScoring["2. Real-Time Scoring & Auto-Triage Engine"]
         ScoringLambda["Scoring Lambda<br/>(Input Sanitization & SLA Guard)"]:::awsCore
         SageMaker["Amazon SageMaker<br/>(Anomaly Autoencoder)"]:::ml
-        CircuitBreaker{"Circuit Breaker<br/>Timeout > 200ms?"}:::security
+        CircuitBreaker{"Circuit Breaker<br/>Timeout &gt; 200ms?"}:::security
         DynamoFallback[("Amazon DynamoDB<br/>Sliding Velocity & Structuring")]:::storage
-        AutoTriage["⚡ 3-Tier Auto-Triage &<br/>AI Pattern Synthesizer"]:::ml
+        AutoTriage["⚡ 3-Tier Auto-Triage &amp;<br/>AI Pattern Synthesizer"]:::ml
     end
 
     %% Graph & Identity Resolution
@@ -108,7 +108,7 @@ flowchart TB
     end
 
     %% HITL & Continuous Retraining
-    subgraph HumanInTheLoop["5. FIU Human-In-The-Loop (~6.5% Gray-Zone)"]
+    subgraph HumanInTheLoop["5. FIU Human-In-The-Loop (approx 6.5% Gray-Zone)"]
         CloudFront["Amazon CloudFront (OAC)"]:::security
         ReactApp["Fraud Analyst Dashboard<br/>(React.js SPA • 130 Cases/Day)"]:::hitl
         HITLLambda["HITL Audit Lambda<br/>(Dual-Control Governance)"]:::awsCore
@@ -117,35 +117,35 @@ flowchart TB
     end
 
     %% Flow Connections
-    MoMo -->|POST /score| APIGW
-    CBS -->|POST /score| APIGW
+    MoMo -->|"POST /score"| APIGW
+    CBS -->|"POST /score"| APIGW
     APIGW --> ScoringLambda
 
-    ScoringLambda -->|1. Try ML Inference| SageMaker
-    SageMaker -.->|Anomaly Score| ScoringLambda
-    ScoringLambda -->|2. Timeout / Error| CircuitBreaker
-    CircuitBreaker -->|Fallback Triggered| DynamoFallback
-    DynamoFallback -.->|Sliding Volume Verdict| ScoringLambda
+    ScoringLambda -->|"1. Try ML Inference"| SageMaker
+    SageMaker -.->|"Anomaly Score"| ScoringLambda
+    ScoringLambda -->|"2. Timeout / Error"| CircuitBreaker
+    CircuitBreaker -->|"Fallback Triggered"| DynamoFallback
+    DynamoFallback -.->|"Sliding Volume Verdict"| ScoringLambda
     ScoringLambda --> AutoTriage
 
     %% Auto-Triage 3-Tier Distribution
-    AutoTriage -->|Tier 1: Score >= 0.90 (Auto-Block 19.5%)| EventBus
-    AutoTriage -.->|Tier 2: Score <= 0.40 (Auto-Safe 74.0%)| S3HITL
-    AutoTriage -->|Tier 3: Gray-Zone (~6.5%)| ReactApp
+    AutoTriage -->|"Tier 1: Score &ge; 0.90 (Auto-Block 19.5%)"| EventBus
+    AutoTriage -.->|"Tier 2: Score &le; 0.40 (Auto-Safe 74.0%)"| S3HITL
+    AutoTriage -->|"Tier 3: Gray-Zone (~6.5%)"| ReactApp
 
     S3Raw --> EntityRes
-    EntityRes -->|Resolved Persistent Entities| Neptune
-    Neptune -.->|Sub-Graph Risk Metrics| ScoringLambda
+    EntityRes -->|"Resolved Persistent Entities"| Neptune
+    Neptune -.->|"Sub-Graph Risk Metrics"| ScoringLambda
 
-    EventBus -->|Trigger Instant Hold| DownstreamLedger
+    EventBus -->|"Trigger Instant Hold"| DownstreamLedger
 
-    ReactApp -->|View Gray-Zone Cases| CloudFront
+    ReactApp -->|"View Gray-Zone Cases"| CloudFront
     CloudFront --> APIGW
-    ReactApp -->|POST /feedback (Audit Reversal)| HITLLambda
-    HITLLambda -->|Store Feedback Record| S3HITL
-    HITLLambda -->|Publish Feedback / Supervisor Alert| EventBus
-    S3HITL -->|Trigger Retraining Job| RetrainPipeline
-    RetrainPipeline -->|Deploy Updated Weights| SageMaker
+    ReactApp -->|"POST /feedback (Audit Reversal)"| HITLLambda
+    HITLLambda -->|"Store Feedback Record"| S3HITL
+    HITLLambda -->|"Publish Feedback / Supervisor Alert"| EventBus
+    S3HITL -->|"Trigger Retraining Job"| RetrainPipeline
+    RetrainPipeline -->|"Deploy Updated Weights"| SageMaker
 ```
 
 </details>
