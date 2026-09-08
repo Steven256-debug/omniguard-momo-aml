@@ -59,6 +59,10 @@ const Login = ({ onLogin }) => {
               autoCapitalize="none"
               spellCheck="false"
               style={{
+                background: 'rgba(0, 0, 0, 0.18)',
+                backgroundColor: 'rgba(0, 0, 0, 0.18)',
+                WebkitAppearance: 'none',
+                appearance: 'none',
                 color: '#ffffff',
                 WebkitTextFillColor: '#ffffff',
                 caretColor: '#ffffff',
@@ -83,6 +87,10 @@ const Login = ({ onLogin }) => {
               autoCapitalize="none"
               spellCheck="false"
               style={{
+                background: 'rgba(0, 0, 0, 0.18)',
+                backgroundColor: 'rgba(0, 0, 0, 0.18)',
+                WebkitAppearance: 'none',
+                appearance: 'none',
                 color: '#ffffff',
                 WebkitTextFillColor: '#ffffff',
                 caretColor: '#ffffff',
@@ -99,10 +107,11 @@ const Login = ({ onLogin }) => {
                 right: '14px',
                 background: 'transparent',
                 border: 'none',
-                color: 'rgba(255, 255, 255, 0.75)',
+                color: 'rgba(255, 255, 255, 0.85)',
                 cursor: 'pointer',
                 display: 'flex',
-                alignItems: 'center'
+                alignItems: 'center',
+                zIndex: 10
               }}
             >
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}

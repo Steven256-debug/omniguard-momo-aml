@@ -1001,27 +1001,23 @@ body {
   min-height: 100vh;
   min-height: 100dvh;
   width: 100vw;
-  /* Atmospheric nature hills backdrop with blur overlay matching reference */
+  /* Exact match to user reference: lush nature hills wallpaper with soft darkening overlay */
   background: 
-    linear-gradient(rgba(10, 20, 15, 0.35), rgba(10, 20, 15, 0.45)),
-    radial-gradient(circle at 50% 20%, rgba(134, 239, 172, 0.25) 0%, transparent 60%),
-    radial-gradient(circle at 80% 80%, rgba(56, 189, 248, 0.2) 0%, transparent 60%),
-    linear-gradient(180deg, #374151 0%, #1f2937 40%, #14532d 100%);
-  background-size: cover;
-  background-position: center;
+    linear-gradient(rgba(10, 20, 15, 0.15), rgba(10, 20, 15, 0.3)),
+    url('/login-bg.jpg') center center / cover no-repeat;
   padding: 20px;
 }
 
 .apple-frosted-login-card {
   width: 100%;
-  max-width: 380px;
-  background: rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(35px) saturate(200%);
-  -webkit-backdrop-filter: blur(35px) saturate(200%);
-  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  max-width: 370px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1.5px solid rgba(255, 255, 255, 0.55);
   border-radius: 28px;
-  padding: 38px 32px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.5);
+  padding: 36px 30px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25), inset 0 1px 2px rgba(255, 255, 255, 0.6);
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -1029,7 +1025,7 @@ body {
 }
 
 .login-headline h2 {
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 800;
   letter-spacing: -0.03em;
   color: #ffffff;
@@ -1038,7 +1034,7 @@ body {
 
 .login-headline p {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(255, 255, 255, 0.9);
   font-weight: 400;
 }
 
@@ -1046,19 +1042,20 @@ body {
   position: relative;
   display: flex;
   align-items: center;
+  width: 100%;
 }
 
 .apple-frosted-input {
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
   width: 100%;
-  padding: 13px 44px 13px 16px;
-  background: rgba(255, 255, 255, 0.16);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  border-radius: var(--radius-md);
+  padding: 13px 46px 13px 16px;
+  /* Dark translucent tint ensures high contrast with white text and avoids iOS Safari nested blur white-out bug */
+  background: rgba(0, 0, 0, 0.16) !important;
+  background-color: rgba(0, 0, 0, 0.16) !important;
+  border: 1px solid rgba(255, 255, 255, 0.45) !important;
+  border-radius: 14px;
   font-size: 16px; /* Crucial: 16px prevents iOS Safari auto-zoom and clipping bug */
   line-height: 1.5;
   color: #ffffff !important;
@@ -1068,21 +1065,21 @@ body {
   outline: none;
   font-family: var(--font-sans);
   transition: all 0.2s ease;
-  transform: translateZ(0); /* Hardware accelerated compositing to fix iOS WebKit repainting bug */
-  -webkit-transform: translateZ(0);
 }
 
 .apple-frosted-input:focus {
-  background: rgba(255, 255, 255, 0.24);
-  border-color: rgba(255, 255, 255, 0.8);
+  background: rgba(0, 0, 0, 0.26) !important;
+  background-color: rgba(0, 0, 0, 0.26) !important;
+  border-color: rgba(255, 255, 255, 0.9) !important;
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.25);
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
 }
 
 .apple-frosted-input::placeholder {
-  color: rgba(255, 255, 255, 0.65);
-  -webkit-text-fill-color: rgba(255, 255, 255, 0.65);
+  color: rgba(255, 255, 255, 0.75) !important;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.75) !important;
+  opacity: 1 !important;
 }
 
 /* Fix mobile browser autofill turning text invisible */
@@ -1091,8 +1088,8 @@ body {
 .apple-frosted-input:-webkit-autofill:focus,
 .apple-frosted-input:-webkit-autofill:active {
   -webkit-text-fill-color: #ffffff !important;
-  -webkit-box-shadow: 0 0 0px 1000px rgba(30, 45, 35, 0.95) inset !important;
-  box-shadow: 0 0 0px 1000px rgba(30, 45, 35, 0.95) inset !important;
+  -webkit-box-shadow: 0 0 0px 1000px rgba(35, 55, 40, 0.95) inset !important;
+  box-shadow: 0 0 0px 1000px rgba(35, 55, 40, 0.95) inset !important;
   caret-color: #ffffff !important;
   transition: background-color 5000s ease-in-out 0s;
 }
@@ -1100,44 +1097,47 @@ body {
 .input-trailing-icon {
   position: absolute;
   right: 14px;
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(255, 255, 255, 0.85);
   pointer-events: none;
+  z-index: 10;
 }
 
 .remember-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12.5px;
-  color: rgba(255, 255, 255, 0.9);
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.95);
   cursor: pointer;
 }
 
 .remember-checkbox {
-  width: 16px;
-  height: 16px;
-  accent-color: #ffffff;
+  width: 17px;
+  height: 17px;
+  accent-color: #84cc16;
+  border-radius: 4px;
   cursor: pointer;
 }
 
 .apple-login-btn {
   width: 100%;
   padding: 13px;
-  background: linear-gradient(180deg, rgba(101, 163, 13, 0.85) 0%, rgba(77, 124, 15, 0.9) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  border-radius: var(--radius-md);
+  /* Exact olive-green glossy gradient matching reference image */
+  background: linear-gradient(180deg, rgba(145, 175, 75, 0.95) 0%, rgba(95, 125, 35, 0.98) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 14px;
   color: #ffffff;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.4);
-  transition: all 0.2s ease;
   font-family: var(--font-sans);
-  margin-top: 4px;
+  cursor: pointer;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.5);
+  transition: all 0.2s ease;
 }
 
 .apple-login-btn:hover {
-  filter: brightness(1.1);
+  background: linear-gradient(180deg, rgba(158, 192, 82, 1) 0%, rgba(105, 140, 40, 1) 100%);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.6);
   transform: translateY(-1px);
 }
 
