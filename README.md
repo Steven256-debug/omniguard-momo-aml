@@ -61,7 +61,7 @@ Transfer initiated
 ## Architecture
 
 <p align="center">
-  <img src="architecture.svg" alt="OmniGuard MoMo AML AWS Enterprise Architecture" width="100%"/>
+  <img src="architecture_diagram.png" alt="OmniGuard MoMo AML AWS Enterprise Architecture" width="100%"/>
 </p>
 
 <details>
