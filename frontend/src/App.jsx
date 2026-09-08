@@ -4,7 +4,7 @@ import InvestigationView from './components/InvestigationView';
 import RegionalTrends from './components/RegionalTrends';
 import Login from './components/Login';
 import { fetchMockAlerts, submitBatchAutoTriage } from './services/api';
-import { Shield, Activity, BarChart2, Check, X } from 'lucide-react';
+import { Shield, Activity, BarChart2, Check, X, Sun, Moon } from 'lucide-react';
 import './index.css';
 
 function App() {
@@ -13,6 +13,18 @@ function App() {
   const [alerts, setAlerts] = useState([]);
   const [selectedAlert, setSelectedAlert] = useState(null);
   const [notification, setNotification] = useState(null);
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('omniguard_theme') || 'dark';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('omniguard_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
+  };
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -91,6 +103,16 @@ function App() {
             <span>Live (42ms SLA)</span>
           </div>
 
+          {/* Dark / Light Mode Toggle */}
+          <button 
+            className="theme-toggle-btn"
+            onClick={toggleTheme}
+            title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            aria-label="Toggle theme"
+          >
+            {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+          </button>
+
           <div className="user-profile-menu">
             <div className="user-avatar-circle">SA</div>
             <span>Lead Analyst</span>
@@ -100,7 +122,7 @@ function App() {
 
       {notification && (
         <div style={{
-          background: '#18191e',
+          background: 'var(--bg-card)',
           borderBottom: '1px solid var(--border-default)',
           color: 'var(--text-primary)',
           padding: '8px 24px',
@@ -136,7 +158,7 @@ function App() {
           />
         </div>
       ) : (
-        <RegionalTrends />
+        <RegionalTrends theme={theme} />
       )}
     </div>
   );

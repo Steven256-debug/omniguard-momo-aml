@@ -7,7 +7,7 @@ import { fetchRegionalTrends } from '../services/api';
 
 const COLORS = ['#10b981', '#ef4444'];
 
-const RegionalTrends = () => {
+const RegionalTrends = ({ theme = 'dark' }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -18,6 +18,14 @@ const RegionalTrends = () => {
     }, 250);
     return () => clearTimeout(timer);
   }, []);
+
+  const isDark = theme === 'dark';
+  const gridColor = isDark ? '#27272a' : '#e2e8f0';
+  const tickColor = isDark ? '#a1a1aa' : '#64748b';
+  const axisColor = isDark ? '#52525b' : '#cbd5e1';
+  const tooltipBg = isDark ? '#18191e' : '#ffffff';
+  const tooltipBorder = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+  const tooltipText = isDark ? '#f4f4f5' : '#09090b';
 
   if (loading) {
     return (
@@ -73,18 +81,19 @@ const RegionalTrends = () => {
           <div style={{ height: '300px', marginTop: '10px' }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
-                <XAxis dataKey="name" stroke="#52525b" tick={{ fill: '#a1a1aa', fontSize: 11 }} />
-                <YAxis stroke="#52525b" tick={{ fill: '#a1a1aa', fontSize: 11 }} />
+                <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
+                <XAxis dataKey="name" stroke={axisColor} tick={{ fill: tickColor, fontSize: 11 }} />
+                <YAxis stroke={axisColor} tick={{ fill: tickColor, fontSize: 11 }} />
                 <Tooltip 
                   contentStyle={{ 
-                    backgroundColor: '#18191e', 
-                    borderColor: 'rgba(255, 255, 255, 0.1)', 
+                    backgroundColor: tooltipBg, 
+                    borderColor: tooltipBorder, 
                     borderRadius: '6px', 
-                    color: '#f4f4f5',
-                    fontSize: '12px'
+                    color: tooltipText,
+                    fontSize: '12px',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
                   }} 
-                  cursor={{ fill: 'rgba(255, 255, 255, 0.02)' }}
+                  cursor={{ fill: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)' }}
                 />
                 <Legend wrapperStyle={{ paddingTop: '10px', fontSize: '11.5px' }} />
                 <Bar dataKey="safe" name="Safe" stackId="a" fill="#10b981" radius={[0, 0, 2, 2]} />
@@ -115,18 +124,19 @@ const RegionalTrends = () => {
                     <Cell 
                       key={`cell-${index}`} 
                       fill={COLORS[index % COLORS.length]} 
-                      stroke="#0f1013"
+                      stroke={isDark ? '#0f1013' : '#ffffff'}
                       strokeWidth={2}
                     />
                   ))}
                 </Pie>
                 <Tooltip 
                   contentStyle={{ 
-                    backgroundColor: '#18191e', 
-                    borderColor: 'rgba(255, 255, 255, 0.1)', 
+                    backgroundColor: tooltipBg, 
+                    borderColor: tooltipBorder, 
                     borderRadius: '6px', 
-                    color: '#f4f4f5',
-                    fontSize: '12px'
+                    color: tooltipText,
+                    fontSize: '12px',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
                   }} 
                 />
               </PieChart>
