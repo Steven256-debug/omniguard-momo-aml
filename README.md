@@ -1,5 +1,9 @@
 # 🛡️ OmniGuard MoMo AML — Real-Time Graph AI & Anti-Money Laundering Engine
 
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![AWS](https://img.shields.io/badge/AWS-Serverless-orange.svg)](https://aws.amazon.com)
+[![Status](https://img.shields.io/badge/Status-PoC%20Verified-success.svg)](https://d2fui87kr2y14y.cloudfront.net)
+
 A production-ready, cloud-native real-time Anti-Money Laundering (AML) engine built for Ghanaian Banks, Payment Service Providers (PSPs), and Mobile Money Operators (MTN MoMo, Telecel, AT). It combines graph-based entity resolution, unsupervised machine learning, and automated 3-tier triage to stop complex mule rings and financial fraud in real time.
 
 🔗 **Live Demo:** [https://d2fui87kr2y14y.cloudfront.net](https://d2fui87kr2y14y.cloudfront.net)  
@@ -21,6 +25,7 @@ A production-ready, cloud-native real-time Anti-Money Laundering (AML) engine bu
 - [Data Analytics & Audit](#data-analytics--audit)
 - [Future Improvements](#future-improvements)
 - [Author](#author)
+- [License](#license)
 
 ---
 
@@ -371,3 +376,10 @@ All scoring decisions, fallback triggers, and analyst reviews are persisted into
 **Steven Asante-Poku Jnr**  
 *Cloud & AI Developer*  
 [GitHub Profile](https://github.com/Steven256-debug)
+
+---
+
+## License
+
+This project is open-source and licensed under the **Apache License, Version 2.0**.  
+See the [LICENSE](LICENSE) file for the full license text and terms.
