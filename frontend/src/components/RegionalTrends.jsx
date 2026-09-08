@@ -85,7 +85,7 @@ const RegionalTrends = ({ theme = 'dark' }) => {
   return (
     <div className="trends-view-container">
       {/* Page Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div className="trends-header-row">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.03em' }}>
             Regional Telemetry &amp; Syndicate Network Analytics
@@ -113,7 +113,7 @@ const RegionalTrends = ({ theme = 'dark' }) => {
       </div>
 
       {/* 4 Apple Frosted Glass KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
+      <div className="trends-kpi-grid">
         <div className="kpi-box">
           <div className="kpi-box-title">24H Grid Volume</div>
           <div className="kpi-box-val">GH¢ {(totalVolumeGHS / 1000000).toFixed(1)}M</div>
@@ -200,7 +200,7 @@ const RegionalTrends = ({ theme = 'dark' }) => {
       </div>
 
       {/* Grid: Bar Chart + Radial Donut Chart */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1.2fr', gap: '16px' }}>
+      <div className="trends-charts-grid">
         {/* Regional Breakdown Bar Chart */}
         <div className="panel-card" style={{ padding: '20px 22px' }}>
           <div className="panel-card-title">

@@ -78,52 +78,50 @@ function App() {
   return (
     <div className="app-wrapper">
       <header className="top-nav">
-        <div className="nav-left">
+        <div className="nav-header-row">
           <div className="brand-link">
-            <Shield className="brand-icon" />
-            <span>OmniGuard</span>
-            <span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}>MoMo AML</span>
+            <Shield className="brand-icon" size={18} />
+            <span className="brand-title">OmniGuard</span>
+            <span className="brand-subtitle" style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}>MoMo AML</span>
           </div>
 
-          <div className="nav-divider"></div>
+          <div className="nav-right">
+            <div className="status-indicator-tag">
+              <div className="dot-status"></div>
+              <span>Live (42ms SLA)</span>
+            </div>
 
-          <nav className="nav-tabs">
+            {/* Dark / Light Mode Toggle */}
             <button 
-              className={`nav-tab-link ${activeTab === 'investigations' ? 'active' : ''}`}
-              onClick={() => setActiveTab('investigations')}
+              className="theme-toggle-btn"
+              onClick={toggleTheme}
+              title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+              aria-label="Toggle theme"
             >
-              <Activity size={14} /> Triage Queue
+              {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
             </button>
-            <button 
-              className={`nav-tab-link ${activeTab === 'trends' ? 'active' : ''}`}
-              onClick={() => setActiveTab('trends')}
-            >
-              <BarChart2 size={14} /> Regional Analytics
-            </button>
-          </nav>
+
+            <div className="user-profile-menu">
+              <div className="user-avatar-circle">SA</div>
+              <span className="user-profile-name">Lead Analyst</span>
+            </div>
+          </div>
         </div>
 
-        <div className="nav-right">
-          <div className="status-indicator-tag">
-            <div className="dot-status"></div>
-            <span>Live (42ms SLA)</span>
-          </div>
-
-          {/* Dark / Light Mode Toggle */}
+        <nav className="nav-tabs">
           <button 
-            className="theme-toggle-btn"
-            onClick={toggleTheme}
-            title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-            aria-label="Toggle theme"
+            className={`nav-tab-link ${activeTab === 'investigations' ? 'active' : ''}`}
+            onClick={() => setActiveTab('investigations')}
           >
-            {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+            <Activity size={14} /> <span>Triage Queue</span>
           </button>
-
-          <div className="user-profile-menu">
-            <div className="user-avatar-circle">SA</div>
-            <span>Lead Analyst</span>
-          </div>
-        </div>
+          <button 
+            className={`nav-tab-link ${activeTab === 'trends' ? 'active' : ''}`}
+            onClick={() => setActiveTab('trends')}
+          >
+            <BarChart2 size={14} /> <span>Regional Analytics</span>
+          </button>
+        </nav>
       </header>
 
       {notification && (
