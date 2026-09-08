@@ -4,7 +4,7 @@ import InvestigationView from './components/InvestigationView';
 import RegionalTrends from './components/RegionalTrends';
 import Login from './components/Login';
 import { fetchMockAlerts, submitBatchAutoTriage } from './services/api';
-import { Activity, BarChart2, CheckCircle2 } from 'lucide-react';
+import { Activity, BarChart2, CheckCircle2, Shield, Zap, Lock, LogOut } from 'lucide-react';
 import './index.css';
 
 function App() {
@@ -25,7 +25,6 @@ function App() {
   }, [isAuthenticated]);
 
   const handleActionComplete = (transactionId, feedbackLabel) => {
-    // Update alert status or remove
     const updatedAlerts = alerts.map(a => {
       if (a.id === transactionId) {
         return {
@@ -44,7 +43,6 @@ function App() {
   };
 
   const handleRunAutoTriage = async () => {
-    // Simulate auto-triage of daily volume
     const itemsToSubmit = alerts.map(a => ({
       transaction_id: a.id,
       feedback_label: a.score >= 0.90 ? 'AUTO_CONFIRMED_FRAUD' : a.score <= 0.40 ? 'AUTO_CLEARED_SAFE' : 'PENDING',
@@ -54,7 +52,7 @@ function App() {
 
     await submitBatchAutoTriage(itemsToSubmit);
 
-    setTriageToast("Auto-triage completed! 1,870 high/low confidence alerts automatically resolved. 130 gray-zone cases queued for review.");
+    setTriageToast("Automated Triage Executed: 1,870 routine and high-risk alerts automatically triaged to CBS & S3 audit. 130 ambiguous cases prioritized for human review.");
     setTimeout(() => setTriageToast(null), 6000);
   };
 
@@ -65,46 +63,77 @@ function App() {
   return (
     <div className="app-wrapper">
       <nav className="top-nav">
-        <div className="nav-brand">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{color: 'var(--accent)'}}>
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-          </svg>
-          OmniGuard MoMo AML
+        <div className="nav-brand-container">
+          <div className="brand-icon-wrapper">
+            <Shield size={20} />
+          </div>
+          <div className="nav-brand">
+            OmniGuard MoMo AML
+            <span className="nav-compliance-tag">BoG CISD 2026</span>
+          </div>
         </div>
+
         <div className="nav-links">
           <button 
             className={`nav-btn ${activeTab === 'investigations' ? 'active' : ''}`}
             onClick={() => setActiveTab('investigations')}
           >
-            <Activity size={18} /> FIU Triage &amp; Alerts
+            <Activity size={16} /> FIU Triage &amp; Alerts
           </button>
           <button 
             className={`nav-btn ${activeTab === 'trends' ? 'active' : ''}`}
             onClick={() => setActiveTab('trends')}
           >
-            <BarChart2 size={18} /> Regional Trends
+            <BarChart2 size={16} /> Regional Analytics
           </button>
         </div>
-        <div className="nav-user">
-          FIU Lead Analyst
+
+        <div className="nav-right">
+          <div className="engine-status-pill">
+            <div className="status-dot-pulse"></div>
+            <span>Sub-200ms SLA Active</span>
+          </div>
+
+          <div className="nav-user-badge">
+            <div className="user-avatar">SA</div>
+            <span>FIU Lead Analyst</span>
+          </div>
         </div>
       </nav>
 
       {/* Auto-Triage Toast Notification */}
       {triageToast && (
         <div style={{
-          background: '#064e3b',
+          background: 'rgba(6, 78, 59, 0.95)',
           borderBottom: '1px solid #059669',
           color: '#34d399',
           padding: '10px 24px',
-          fontSize: '13px',
+          fontSize: '12.5px',
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
-          fontWeight: 500
+          justifyContent: 'space-between',
+          gap: '12px',
+          fontWeight: 500,
+          boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+          zIndex: 40
         }}>
-          <CheckCircle2 size={16} />
-          {triageToast}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <CheckCircle2 size={16} />
+            {triageToast}
+          </div>
+          <button 
+            onClick={() => setTriageToast(null)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#34d399',
+              cursor: 'pointer',
+              fontSize: '13px',
+              padding: '2px 6px'
+            }}
+          >
+            ✕
+          </button>
         </div>
       )}
 
