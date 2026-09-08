@@ -799,7 +799,10 @@ body {
 
 .narrative-quote-block {
   font-size: 13.5px;
-  line-height: 1.65;
+  line-height: 1.5;
+  word-spacing: 1.5px;
+  text-align: justify;
+  text-justify: inter-word;
   color: var(--text-primary);
   border-left: 3px solid rgba(59, 130, 246, 0.8);
   padding-left: 14px;

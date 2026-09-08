@@ -90,7 +90,7 @@ const RegionalTrends = ({ theme = 'dark' }) => {
           <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.03em' }}>
             Regional Telemetry &amp; Syndicate Network Analytics
           </h2>
-          <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)' }}>
+          <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', lineHeight: 1.5, wordSpacing: '1.5px', textAlign: 'justify', textJustify: 'inter-word' }}>
             Real-time multi-corridor transaction velocity and unsupervised anomaly detection across Ghana.
           </p>
         </div>

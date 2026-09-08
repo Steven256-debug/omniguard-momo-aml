@@ -113,11 +113,15 @@ const InvestigationView = ({ alert, onActionComplete }) => {
             padding: '10px 14px',
             borderRadius: 'var(--radius-md)',
             fontSize: '12px',
+            lineHeight: 1.5,
+            wordSpacing: '1.5px',
+            textAlign: 'justify',
+            textJustify: 'inter-word',
             display: 'flex',
             alignItems: 'center',
             gap: '8px'
           }}>
-            <ShieldAlert size={15} />
+            <ShieldAlert size={15} style={{ flexShrink: 0 }} />
             <span>Dual-Control Governance: Amounts exceeding GH¢10,000 require supervisor sign-off for reversals.</span>
           </div>
         )}
