@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { Shield, AlertCircle } from 'lucide-react';
+import { User, Eye, EyeOff, Shield } from 'lucide-react';
 
 const Login = ({ onLogin }) => {
   const [username, setUsername] = useState('admin');
   const [password, setPassword] = useState('password123');
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
 
   const handleSubmit = (e) => {
@@ -16,64 +18,97 @@ const Login = ({ onLogin }) => {
   };
 
   return (
-    <div className="login-container">
-      <div className="login-card">
-        <div className="login-header-group">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-            <Shield size={20} style={{ color: '#ffffff' }} />
-            <span style={{ fontWeight: 600, fontSize: '15px' }}>OmniGuard</span>
+    <div className="login-backdrop-wrapper">
+      <div className="apple-frosted-login-card">
+        <div className="login-headline">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <Shield size={20} color="#ffffff" />
+            <span style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.8)' }}>
+              OmniGuard MoMo AML
+            </span>
           </div>
-          <h2>Sign in to AML Console</h2>
-          <p>Real-time transaction monitoring and triage portal.</p>
+          <h2>Login</h2>
+          <p>Welcome back please login to your account</p>
         </div>
 
         {error && (
           <div style={{
-            background: 'var(--danger-subtle)',
-            border: '1px solid var(--danger-border)',
-            color: 'var(--danger-text)',
+            background: 'rgba(239, 68, 68, 0.25)',
+            border: '1px solid rgba(248, 113, 113, 0.5)',
+            color: '#ffffff',
             padding: '8px 12px',
-            borderRadius: 'var(--radius-md)',
+            borderRadius: '12px',
             fontSize: '12px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px'
+            textAlign: 'center'
           }}>
-            <AlertCircle size={14} />
-            <span>{error}</span>
+            {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <div className="form-field-group">
-            <label>Analyst ID</label>
+          {/* Username */}
+          <div className="apple-frosted-input-box">
             <input 
               type="text" 
+              className="apple-frosted-input"
               value={username} 
               onChange={(e) => setUsername(e.target.value)} 
-              placeholder="admin"
+              placeholder="User Name"
               required 
             />
+            <User size={18} className="input-trailing-icon" />
           </div>
 
-          <div className="form-field-group">
-            <label>Password</label>
+          {/* Password */}
+          <div className="apple-frosted-input-box">
             <input 
-              type="password" 
+              type={showPassword ? "text" : "password"} 
+              className="apple-frosted-input"
               value={password} 
               onChange={(e) => setPassword(e.target.value)} 
-              placeholder="password123"
+              placeholder="Password"
               required 
             />
+            <button 
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              style={{
+                position: 'absolute',
+                right: '14px',
+                background: 'transparent',
+                border: 'none',
+                color: 'rgba(255, 255, 255, 0.75)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center'
+              }}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
           </div>
 
-          <button type="submit" className="btn-submit-login">
-            Continue
+          {/* Remember me */}
+          <label className="remember-row">
+            <input 
+              type="checkbox" 
+              className="remember-checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+            />
+            <span>Remember me</span>
+          </label>
+
+          {/* Login Button */}
+          <button type="submit" className="apple-login-btn">
+            Login
           </button>
         </form>
 
-        <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center', marginTop: '4px' }}>
-          Pre-filled credentials: <span style={{ color: 'var(--text-secondary)' }}>admin / password123</span>
+        <div className="login-footer-text">
+          <span>Don't have an account? <strong>Signup</strong></span>
+          <div style={{ fontSize: '11px', marginTop: '6px', color: 'rgba(255, 255, 255, 0.65)' }}>
+            Demo credentials: <span style={{ color: '#ffffff' }}>admin / password123</span>
+          </div>
         </div>
       </div>
     </div>
