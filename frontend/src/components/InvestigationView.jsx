@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { submitHITLFeedback } from '../services/api';
 import { 
   Check, X, Copy, CheckCheck, ArrowRight, ShieldAlert, 
-  Clock, Shield, AlertCircle
+  Clock, Shield, AlertCircle, ChevronLeft
 } from 'lucide-react';
 
-const InvestigationView = ({ alert, onActionComplete }) => {
+const InvestigationView = ({ alert, onActionComplete, onBack }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(false);
@@ -55,6 +55,12 @@ const InvestigationView = ({ alert, onActionComplete }) => {
         {/* Header Bar */}
         <header className="investigation-header-bar">
           <div className="inv-title-group">
+            {onBack && (
+              <button className="mobile-back-btn" onClick={onBack}>
+                <ChevronLeft size={16} />
+                <span>Back to Queue</span>
+              </button>
+            )}
             <div className="inv-breadcrumb">
               <span>Queue</span>
               <span>/</span>

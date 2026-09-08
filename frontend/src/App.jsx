@@ -13,6 +13,7 @@ function App() {
   const [alerts, setAlerts] = useState([]);
   const [selectedAlert, setSelectedAlert] = useState(null);
   const [notification, setNotification] = useState(null);
+  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('omniguard_theme') || 'dark';
   });
@@ -34,6 +35,11 @@ function App() {
       setSelectedAlert(firstPending || initialAlerts[0]);
     }
   }, [isAuthenticated]);
+
+  const handleSelectAlert = (alert) => {
+    setSelectedAlert(alert);
+    setMobileDetailOpen(true);
+  };
 
   const handleActionComplete = (transactionId, feedbackLabel) => {
     const updatedAlerts = alerts.map(a => {
@@ -145,16 +151,17 @@ function App() {
       )}
 
       {activeTab === 'investigations' ? (
-        <div className="dashboard-container">
+        <div className={`dashboard-container ${mobileDetailOpen ? 'show-detail' : ''}`}>
           <AlertsInbox 
             alerts={alerts} 
             selectedAlert={selectedAlert}
-            onSelectAlert={setSelectedAlert}
+            onSelectAlert={handleSelectAlert}
             onRunAutoTriage={handleRunAutoTriage}
           />
           <InvestigationView 
             alert={selectedAlert} 
             onActionComplete={handleActionComplete}
+            onBack={() => setMobileDetailOpen(false)}
           />
         </div>
       ) : (
