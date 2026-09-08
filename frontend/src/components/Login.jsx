@@ -54,6 +54,17 @@ const Login = ({ onLogin }) => {
               value={username} 
               onChange={(e) => setUsername(e.target.value)} 
               placeholder="User Name"
+              autoComplete="username"
+              autoCorrect="off"
+              autoCapitalize="none"
+              spellCheck="false"
+              style={{
+                color: '#ffffff',
+                WebkitTextFillColor: '#ffffff',
+                caretColor: '#ffffff',
+                fontSize: '16px',
+                opacity: 1
+              }}
               required 
             />
             <User size={18} className="input-trailing-icon" />
@@ -67,6 +78,17 @@ const Login = ({ onLogin }) => {
               value={password} 
               onChange={(e) => setPassword(e.target.value)} 
               placeholder="Password"
+              autoComplete="current-password"
+              autoCorrect="off"
+              autoCapitalize="none"
+              spellCheck="false"
+              style={{
+                color: '#ffffff',
+                WebkitTextFillColor: '#ffffff',
+                caretColor: '#ffffff',
+                fontSize: '16px',
+                opacity: 1
+              }}
               required 
             />
             <button 
