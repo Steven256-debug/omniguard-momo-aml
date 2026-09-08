@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { submitHITLFeedback } from '../services/api';
 import { 
-  ShieldCheck, AlertOctagon, HelpCircle, Check, X, Info, 
-  Copy, CheckCheck, Smartphone, Network, User, DollarSign,
-  ArrowRight, Activity, ShieldAlert, Cpu
+  Check, X, Copy, CheckCheck, ArrowRight, ShieldAlert, 
+  Clock, Shield, AlertCircle
 } from 'lucide-react';
 
 const InvestigationView = ({ alert, onActionComplete }) => {
@@ -13,13 +12,9 @@ const InvestigationView = ({ alert, onActionComplete }) => {
 
   if (!alert) {
     return (
-      <main className="main-content">
-        <div className="empty-state">
-          <Activity size={48} style={{ color: 'var(--text-muted)' }} />
-          <h2 style={{ color: '#ffffff', fontSize: '1.25rem', marginTop: '12px' }}>No Transaction Selected</h2>
-          <p style={{ maxWidth: '380px', fontSize: '13px' }}>
-            Select any transaction from the triage feed on the left to inspect real-time anomaly scores, Neptune graph topologies, and AI pattern narratives.
-          </p>
+      <main className="main-view-pane">
+        <div className="empty-placeholder">
+          <span>Select a transaction from the queue to view details.</span>
         </div>
       </main>
     );
@@ -28,7 +23,7 @@ const InvestigationView = ({ alert, onActionComplete }) => {
   const handleCopyId = () => {
     navigator.clipboard.writeText(alert.id);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), 1500);
   };
 
   const handleAction = async (feedbackLabel) => {
@@ -36,13 +31,13 @@ const InvestigationView = ({ alert, onActionComplete }) => {
     setError(null);
     try {
       const notes = feedbackLabel === 'TRUE_POSITIVE' 
-        ? "Analyst confirmed fraudulent activity via FIU console." 
-        : "Analyst verified transaction as legitimate business activity.";
+        ? "Analyst confirmed fraud." 
+        : "Analyst approved transaction.";
         
       await submitHITLFeedback(alert.id, feedbackLabel, notes, alert.amount);
       onActionComplete(alert.id, feedbackLabel);
     } catch (err) {
-      setError("Failed to submit feedback to API Gateway. Please verify connection and retry.");
+      setError("Failed to record decision. Please retry.");
     } finally {
       setIsSubmitting(false);
     }
@@ -50,294 +45,214 @@ const InvestigationView = ({ alert, onActionComplete }) => {
 
   const isAutoFraud = alert.triage_tier === 'AUTO_CONFIRMED_FRAUD';
   const isAutoSafe = alert.triage_tier === 'AUTO_CLEARED_SAFE';
-  const isReviewRequired = alert.triage_tier === 'REQUIRES_HUMAN_REVIEW';
-
-  const tierKey = isAutoFraud ? 'fraud' : isAutoSafe ? 'safe' : 'review';
+  const statusType = isAutoFraud ? 'fraud' : isAutoSafe ? 'safe' : 'review';
+  const statusLabel = isAutoFraud ? 'Auto-Blocked' : isAutoSafe ? 'Cleared Safe' : 'Review Required';
   const requiresSupervisor = alert.amount >= 10000;
 
   return (
-    <main className="main-content">
-      <div className="investigation-workspace">
-        {/* Workspace Hero Header */}
-        <div className="workspace-header">
-          <div className="workspace-title-group">
-            <h2>Transaction Investigation &amp; Pattern Analysis</h2>
-            <div className="workspace-meta-badges">
-              <button className="copyable-id-badge" onClick={handleCopyId} title="Click to copy Transaction ID">
-                {copied ? <CheckCheck size={13} style={{ color: 'var(--success)' }} /> : <Copy size={13} />}
-                <span>{alert.id}</span>
-                {copied && <span style={{ color: 'var(--success)', fontSize: '10px' }}>(Copied)</span>}
-              </button>
-              <span className="account-type-pill">{alert.account_type || 'RETAIL'} WALLET</span>
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                Processed: {new Date(alert.timestamp).toLocaleString()}
+    <main className="main-view-pane">
+      <div className="investigation-container">
+        {/* Header Bar */}
+        <header className="investigation-header-bar">
+          <div className="inv-title-group">
+            <div className="inv-breadcrumb">
+              <span>Queue</span>
+              <span>/</span>
+              <span style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>{alert.id}</span>
+            </div>
+            <div className="inv-amount-hero">
+              <h2>GH¢ {alert.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
+              <span className={`status-pill-lg ${statusType}`}>
+                {statusLabel}
               </span>
             </div>
           </div>
 
-          {/* Decision Status Hero Pill */}
-          <div 
-            className="tier-decision-hero-badge"
-            style={{
-              background: isAutoFraud ? 'var(--danger-bg)' : isAutoSafe ? 'var(--success-bg)' : 'var(--warning-bg)',
-              color: isAutoFraud ? '#fb7185' : isAutoSafe ? '#34d399' : '#fbbf24',
-              border: `1px solid ${isAutoFraud ? 'var(--danger-border)' : isAutoSafe ? 'var(--success-border)' : 'var(--warning-border)'}`
-            }}
-          >
-            {isAutoFraud && <AlertOctagon size={18} />}
-            {isAutoSafe && <ShieldCheck size={18} />}
-            {isReviewRequired && <HelpCircle size={18} />}
-            <span>
-              {isAutoFraud ? 'AUTO-CONFIRMED FRAUD' : isAutoSafe ? 'AUTO-CLEARED SAFE' : 'REQUIRES HUMAN REVIEW'}
-            </span>
-          </div>
-        </div>
-
-        {error && (
-          <div style={{
-            background: 'var(--danger-bg)',
-            border: '1px solid var(--danger-border)',
-            color: '#fb7185',
-            padding: '12px 16px',
-            borderRadius: '8px',
-            fontSize: '13px',
-            fontWeight: 500
-          }}>
-            {error}
-          </div>
-        )}
-
-        {/* AI Pattern Narrative Card */}
-        <div className={`ai-narrative-card tier-${tierKey}`}>
-          <div className="narrative-header">
-            <Info size={16} style={{ color: isAutoFraud ? '#fb7185' : isAutoSafe ? '#34d399' : 'var(--accent)' }} />
-            <span className="narrative-title">
-              Automated AI Pattern Explanation &amp; Triaging Rationale
-            </span>
-          </div>
-          <p className="narrative-body">
-            {alert.narrative || alert.reason}
-          </p>
-          <div className="narrative-recommendation">
-            <span>System Recommendation:</span>
-            <strong style={{ color: isAutoFraud ? '#fb7185' : isAutoSafe ? '#34d399' : '#fbbf24' }}>
-              {alert.recommendation}
-            </strong>
-          </div>
-        </div>
-
-        {/* Amazon Neptune Sub-Graph Topology Canvas */}
-        <div className="graph-topology-card">
-          <div className="card-title-row">
-            <div className="card-title">
-              <Network size={16} style={{ color: 'var(--accent)' }} />
-              <span>Amazon Neptune Sub-Graph Topology &amp; Flow Dynamics</span>
-            </div>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-              Inference Graph: 3-Hop Traversal
-            </span>
-          </div>
-
-          <div className="topology-container">
-            {/* Sender Node */}
-            <div className="graph-node">
-              <div className="node-icon-circle sender">
-                <User size={20} />
-              </div>
-              <span className="node-label">Origin Sender</span>
-              <span className="node-value">{alert.sender}</span>
-            </div>
-
-            {/* Edge 1 */}
-            <div className="graph-edge">
-              <div className="edge-line"></div>
-              <span className="edge-pill">
-                GH¢ {alert.amount.toLocaleString(undefined, { minimumFractionDigits: 0 })}
-              </span>
-            </div>
-
-            {/* Device Node */}
-            <div className="graph-node">
-              <div className="node-icon-circle device">
-                <Smartphone size={20} />
-              </div>
-              <span className="node-label">Device Hardware</span>
-              <span className="node-value">{alert.device}</span>
-            </div>
-
-            {/* Edge 2 */}
-            <div className="graph-edge">
-              <div className="edge-line"></div>
-              <span className="edge-pill">
-                {isAutoFraud ? 'Mule Cluster' : isAutoSafe ? 'Agent POS' : 'First-Time IMEI'}
-              </span>
-            </div>
-
-            {/* Recipient Node */}
-            <div className="graph-node">
-              <div className="node-icon-circle receiver">
-                <User size={20} />
-              </div>
-              <span className="node-label">Target Recipient</span>
-              <span className="node-value">{alert.receiver}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Behavioral Pattern Attribution (Model Explainability) */}
-        {alert.explainability && alert.explainability.length > 0 && (
-          <div className="explainability-card">
-            <div className="card-title-row">
-              <div className="card-title">
-                <Cpu size={16} style={{ color: 'var(--accent)' }} />
-                <span>Behavioral Pattern Attribution (SageMaker Model Explainability)</span>
-              </div>
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                XAI Feature Weights
-              </span>
-            </div>
-
-            <div className="features-grid">
-              {alert.explainability.map((item, index) => {
-                const isItemDanger = item.type === 'danger';
-                const isItemWarning = item.type === 'warning';
-                const fillColor = isItemDanger ? 'var(--danger)' : isItemWarning ? 'var(--warning)' : 'var(--success)';
-                const textColor = isItemDanger ? '#fb7185' : isItemWarning ? '#fbbf24' : '#34d399';
-
-                return (
-                  <div key={index} className="feature-bar-row">
-                    <div className="feature-info-line">
-                      <span className="feature-title">{item.feature}</span>
-                      <span className="feature-weight-tag" style={{ color: textColor }}>
-                        {item.weight}% weight
-                      </span>
-                    </div>
-                    <div className="feature-track">
-                      <div 
-                        className="feature-fill"
-                        style={{ width: `${item.weight}%`, backgroundColor: fillColor }}
-                      ></div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* 3-Card Entity & Transaction Dossier Grid */}
-        <div className="dossier-grid">
-          {/* Financial Summary */}
-          <div className="dossier-card">
-            <div className="dossier-header">
-              <DollarSign size={15} style={{ color: 'var(--accent)' }} />
-              <span>Financial Parameters</span>
-            </div>
-            <div className="dossier-rows">
-              <div className="dossier-row">
-                <span className="dossier-key">Gross Amount:</span>
-                <span className="dossier-val" style={{ color: 'var(--accent)', fontSize: '13px' }}>
-                  GH¢ {alert.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-              <div className="dossier-row">
-                <span className="dossier-key">Currency Rail:</span>
-                <span className="dossier-val">GHS (Ghana Cedi)</span>
-              </div>
-              <div className="dossier-row">
-                <span className="dossier-key">Scoring Latency:</span>
-                <span className="dossier-val">42.18 ms (p99 SLA)</span>
-              </div>
-              <div className="dossier-row">
-                <span className="dossier-key">Circuit Breaker:</span>
-                <span className="dossier-val" style={{ color: 'var(--success)' }}>Nominal</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Parties & KYC Status */}
-          <div className="dossier-card">
-            <div className="dossier-header">
-              <User size={15} style={{ color: 'var(--accent)' }} />
-              <span>Counterparty KYC</span>
-            </div>
-            <div className="dossier-rows">
-              <div className="dossier-row">
-                <span className="dossier-key">Sender ID:</span>
-                <span className="dossier-val">{alert.sender}</span>
-              </div>
-              <div className="dossier-row">
-                <span className="dossier-key">Recipient ID:</span>
-                <span className="dossier-val">{alert.receiver}</span>
-              </div>
-              <div className="dossier-row">
-                <span className="dossier-key">KYC Verification:</span>
-                <span className="dossier-val" style={{ color: isAutoSafe ? 'var(--success)' : 'var(--warning)' }}>
-                  {isAutoSafe ? 'Tier 3 (Biometric Card)' : 'Tier 1 (Unverified SIM)'}
-                </span>
-              </div>
-              <div className="dossier-row">
-                <span className="dossier-key">Account Type:</span>
-                <span className="dossier-val">{alert.account_type || 'RETAIL'}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Device & Network Telemetry */}
-          <div className="dossier-card">
-            <div className="dossier-header">
-              <Smartphone size={15} style={{ color: 'var(--accent)' }} />
-              <span>Network Telemetry</span>
-            </div>
-            <div className="dossier-rows">
-              <div className="dossier-row">
-                <span className="dossier-key">Device Fingerprint:</span>
-                <span className="dossier-val">{alert.device}</span>
-              </div>
-              <div className="dossier-row">
-                <span className="dossier-key">IP Address:</span>
-                <span className="dossier-val">{alert.ip}</span>
-              </div>
-              <div className="dossier-row">
-                <span className="dossier-key">Telco Carrier:</span>
-                <span className="dossier-val">MTN Ghana / Telecel</span>
-              </div>
-              <div className="dossier-row">
-                <span className="dossier-key">Macie PII Redaction:</span>
-                <span className="dossier-val" style={{ color: 'var(--success)' }}>Enforced</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Analyst Governance & Decision Console */}
-        <div className="action-console">
-          {requiresSupervisor && (
-            <div className="governance-alert">
-              <ShieldAlert size={16} />
-              <span>
-                <strong>BoG CISD Dual-Control Policy:</strong> Transaction value exceeds GH¢10,000. Any manual reversal requires supervisor co-signature and automated audit event dispatch to EventBridge.
-              </span>
-            </div>
-          )}
-
-          <div className="actions-btn-group">
+          <div className="inv-action-buttons">
             <button 
-              className="btn-confirm-fraud"
-              onClick={() => handleAction('TRUE_POSITIVE')}
-              disabled={isSubmitting}
-            >
-              <X size={17} />
-              <span>{isSubmitting ? 'Submitting...' : 'Confirm Fraud (True Positive • Instant CBS Freeze)'}</span>
-            </button>
-            <button 
-              className="btn-mark-safe"
+              className="btn-secondary-action"
               onClick={() => handleAction('FALSE_POSITIVE')}
               disabled={isSubmitting}
             >
-              <Check size={17} />
-              <span>{isSubmitting ? 'Submitting...' : 'Clear as Safe (False Positive • Approved Settlement)'}</span>
+              <Check size={14} style={{ color: 'var(--success)' }} />
+              <span>Clear Transaction</span>
             </button>
+            <button 
+              className="btn-danger-action"
+              onClick={() => handleAction('TRUE_POSITIVE')}
+              disabled={isSubmitting}
+            >
+              <X size={14} />
+              <span>Confirm Fraud</span>
+            </button>
+          </div>
+        </header>
+
+        {error && (
+          <div style={{
+            background: 'var(--danger-subtle)',
+            border: '1px solid var(--danger-border)',
+            color: 'var(--danger-text)',
+            padding: '10px 14px',
+            borderRadius: 'var(--radius-md)',
+            fontSize: '12.5px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <AlertCircle size={15} />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {requiresSupervisor && (
+          <div style={{
+            background: 'var(--warning-subtle)',
+            border: '1px solid var(--warning-border)',
+            color: 'var(--warning-text)',
+            padding: '10px 14px',
+            borderRadius: 'var(--radius-md)',
+            fontSize: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <ShieldAlert size={15} />
+            <span>Dual-Control Governance: Amounts exceeding GH¢10,000 require supervisor sign-off for reversals.</span>
+          </div>
+        )}
+
+        {/* 2-Column Inspector Layout */}
+        <div className="investigation-grid">
+          {/* Main Column */}
+          <div className="investigation-main-col">
+            {/* Triage Narrative */}
+            <div className="panel-card">
+              <div className="panel-card-title">
+                <span>Triage Rationale</span>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Risk Score: {(alert.score * 100).toFixed(0)}%</span>
+              </div>
+              <div className="narrative-quote-block">
+                {alert.narrative || alert.reason}
+              </div>
+              <div className="narrative-footer">
+                <span>Recommendation:</span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{alert.recommendation}</span>
+              </div>
+            </div>
+
+            {/* Network Pathway (Neptune Topology) */}
+            <div className="panel-card">
+              <div className="panel-card-title">
+                <span>Transaction Pathway</span>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Neptune Graph Analysis</span>
+              </div>
+
+              <div className="topology-flow-strip">
+                <div className="flow-step">
+                  <span className="flow-step-label">Sender</span>
+                  <span className="flow-step-val">{alert.sender}</span>
+                </div>
+                <ArrowRight size={14} className="flow-arrow" />
+                <div className="flow-step">
+                  <span className="flow-step-label">Device Hardware</span>
+                  <span className="flow-step-val">{alert.device}</span>
+                </div>
+                <ArrowRight size={14} className="flow-arrow" />
+                <div className="flow-step">
+                  <span className="flow-step-label">Recipient</span>
+                  <span className="flow-step-val">{alert.receiver}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Feature Attribution (Explainability) */}
+            {alert.explainability && alert.explainability.length > 0 && (
+              <div className="panel-card">
+                <div className="panel-card-title">
+                  <span>Model Risk Signals</span>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>SageMaker Autoencoder</span>
+                </div>
+
+                <div className="feature-attribution-list">
+                  {alert.explainability.map((item, index) => {
+                    const typeClass = item.type === 'danger' ? 'danger' : item.type === 'warning' ? 'warning' : 'safe';
+                    return (
+                      <div key={index} className="feature-bar-item">
+                        <div className="feature-header-line">
+                          <span className="feature-name">{item.feature}</span>
+                          <span className="feature-weight">{item.weight}%</span>
+                        </div>
+                        <div className="feature-meter">
+                          <div 
+                            className={`feature-meter-fill ${typeClass}`} 
+                            style={{ width: `${item.weight}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Right Sidebar: Property Inspector */}
+          <div className="investigation-sidebar-col">
+            <div className="panel-card">
+              <div className="panel-card-title">
+                <span>Transaction Details</span>
+              </div>
+
+              <div className="metadata-table">
+                <div className="metadata-row">
+                  <span className="metadata-key">ID</span>
+                  <span 
+                    className="metadata-val" 
+                    onClick={handleCopyId}
+                    style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    title="Copy ID"
+                  >
+                    {alert.id}
+                    {copied ? <CheckCheck size={11} style={{ color: 'var(--success)' }} /> : <Copy size={11} style={{ color: 'var(--text-muted)' }} />}
+                  </span>
+                </div>
+                <div className="metadata-row">
+                  <span className="metadata-key">Timestamp</span>
+                  <span className="metadata-val">{new Date(alert.timestamp).toLocaleString()}</span>
+                </div>
+                <div className="metadata-row">
+                  <span className="metadata-key">Account Type</span>
+                  <span className="metadata-val">{alert.account_type || 'RETAIL'}</span>
+                </div>
+                <div className="metadata-row">
+                  <span className="metadata-key">KYC Status</span>
+                  <span className="metadata-val" style={{ color: isAutoSafe ? 'var(--success-text)' : 'var(--warning-text)' }}>
+                    {isAutoSafe ? 'Level-3 (Biometric)' : 'Level-1 (Standard)'}
+                  </span>
+                </div>
+                <div className="metadata-row">
+                  <span className="metadata-key">Device ID</span>
+                  <span className="metadata-val">{alert.device}</span>
+                </div>
+                <div className="metadata-row">
+                  <span className="metadata-key">IP Address</span>
+                  <span className="metadata-val">{alert.ip}</span>
+                </div>
+                <div className="metadata-row">
+                  <span className="metadata-key">Inference Time</span>
+                  <span className="metadata-val">42.18 ms</span>
+                </div>
+                <div className="metadata-row">
+                  <span className="metadata-key">Circuit Breaker</span>
+                  <span className="metadata-val" style={{ color: 'var(--success-text)' }}>Healthy</span>
+                </div>
+                <div className="metadata-row">
+                  <span className="metadata-key">PII Redaction</span>
+                  <span className="metadata-val">Macie Active</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

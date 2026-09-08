@@ -4,7 +4,7 @@ import InvestigationView from './components/InvestigationView';
 import RegionalTrends from './components/RegionalTrends';
 import Login from './components/Login';
 import { fetchMockAlerts, submitBatchAutoTriage } from './services/api';
-import { Activity, BarChart2, CheckCircle2, Shield, Zap, Lock, LogOut } from 'lucide-react';
+import { Shield, Activity, BarChart2, Check, X } from 'lucide-react';
 import './index.css';
 
 function App() {
@@ -12,13 +12,12 @@ function App() {
   const [activeTab, setActiveTab] = useState('investigations');
   const [alerts, setAlerts] = useState([]);
   const [selectedAlert, setSelectedAlert] = useState(null);
-  const [triageToast, setTriageToast] = useState(null);
+  const [notification, setNotification] = useState(null);
 
   useEffect(() => {
     if (isAuthenticated) {
       const initialAlerts = fetchMockAlerts();
       setAlerts(initialAlerts);
-      // Automatically select first review-required alert
       const firstPending = initialAlerts.find(a => a.triage_tier === 'REQUIRES_HUMAN_REVIEW');
       setSelectedAlert(firstPending || initialAlerts[0]);
     }
@@ -36,8 +35,6 @@ function App() {
       return a;
     });
     setAlerts(updatedAlerts);
-    
-    // Select next pending alert
     const nextPending = updatedAlerts.find(a => a.id !== transactionId && a.triage_tier === 'REQUIRES_HUMAN_REVIEW');
     setSelectedAlert(nextPending || null);
   };
@@ -52,8 +49,8 @@ function App() {
 
     await submitBatchAutoTriage(itemsToSubmit);
 
-    setTriageToast("Automated Triage Executed: 1,870 routine and high-risk alerts automatically triaged to CBS & S3 audit. 130 ambiguous cases prioritized for human review.");
-    setTimeout(() => setTriageToast(null), 6000);
+    setNotification("Automated triage finished: 1,870 transactions resolved, 130 queued for review.");
+    setTimeout(() => setNotification(null), 5000);
   };
 
   if (!isAuthenticated) {
@@ -62,77 +59,65 @@ function App() {
 
   return (
     <div className="app-wrapper">
-      <nav className="top-nav">
-        <div className="nav-brand-container">
-          <div className="brand-icon-wrapper">
-            <Shield size={20} />
+      <header className="top-nav">
+        <div className="nav-left">
+          <div className="brand-link">
+            <Shield className="brand-icon" />
+            <span>OmniGuard</span>
+            <span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}>MoMo AML</span>
           </div>
-          <div className="nav-brand">
-            OmniGuard MoMo AML
-            <span className="nav-compliance-tag">BoG CISD 2026</span>
-          </div>
-        </div>
 
-        <div className="nav-links">
-          <button 
-            className={`nav-btn ${activeTab === 'investigations' ? 'active' : ''}`}
-            onClick={() => setActiveTab('investigations')}
-          >
-            <Activity size={16} /> FIU Triage &amp; Alerts
-          </button>
-          <button 
-            className={`nav-btn ${activeTab === 'trends' ? 'active' : ''}`}
-            onClick={() => setActiveTab('trends')}
-          >
-            <BarChart2 size={16} /> Regional Analytics
-          </button>
+          <div className="nav-divider"></div>
+
+          <nav className="nav-tabs">
+            <button 
+              className={`nav-tab-link ${activeTab === 'investigations' ? 'active' : ''}`}
+              onClick={() => setActiveTab('investigations')}
+            >
+              <Activity size={14} /> Triage Queue
+            </button>
+            <button 
+              className={`nav-tab-link ${activeTab === 'trends' ? 'active' : ''}`}
+              onClick={() => setActiveTab('trends')}
+            >
+              <BarChart2 size={14} /> Regional Analytics
+            </button>
+          </nav>
         </div>
 
         <div className="nav-right">
-          <div className="engine-status-pill">
-            <div className="status-dot-pulse"></div>
-            <span>Sub-200ms SLA Active</span>
+          <div className="status-indicator-tag">
+            <div className="dot-status"></div>
+            <span>Live (42ms SLA)</span>
           </div>
 
-          <div className="nav-user-badge">
-            <div className="user-avatar">SA</div>
-            <span>FIU Lead Analyst</span>
+          <div className="user-profile-menu">
+            <div className="user-avatar-circle">SA</div>
+            <span>Lead Analyst</span>
           </div>
         </div>
-      </nav>
+      </header>
 
-      {/* Auto-Triage Toast Notification */}
-      {triageToast && (
+      {notification && (
         <div style={{
-          background: 'rgba(6, 78, 59, 0.95)',
-          borderBottom: '1px solid #059669',
-          color: '#34d399',
-          padding: '10px 24px',
-          fontSize: '12.5px',
+          background: '#18191e',
+          borderBottom: '1px solid var(--border-default)',
+          color: 'var(--text-primary)',
+          padding: '8px 24px',
+          fontSize: '12px',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '12px',
-          fontWeight: 500,
-          boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
-          zIndex: 40
+          justifyContent: 'space-between'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <CheckCircle2 size={16} />
-            {triageToast}
+            <Check size={14} style={{ color: 'var(--success)' }} />
+            {notification}
           </div>
           <button 
-            onClick={() => setTriageToast(null)}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#34d399',
-              cursor: 'pointer',
-              fontSize: '13px',
-              padding: '2px 6px'
-            }}
+            onClick={() => setNotification(null)}
+            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
           >
-            ✕
+            <X size={12} />
           </button>
         </div>
       )}
