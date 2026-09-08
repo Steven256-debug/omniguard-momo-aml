@@ -181,11 +181,28 @@ export const fetchMockAlerts = () => {
 
 export const fetchRegionalTrends = () => {
   return [
-    { name: 'Greater Accra', total: 4500, flagged: 320, safe: 4180 },
-    { name: 'Ashanti', total: 3200, flagged: 190, safe: 3010 },
-    { name: 'Western', total: 2100, flagged: 85, safe: 2015 },
-    { name: 'Northern', total: 1800, flagged: 140, safe: 1660 },
-    { name: 'Central', total: 1500, flagged: 60, safe: 1440 },
-    { name: 'Volta', total: 900, flagged: 30, safe: 870 },
+    { name: 'Greater Accra', total: 4500, flagged: 320, safe: 4180, volumeGHS: 14850000 },
+    { name: 'Ashanti', total: 3200, flagged: 190, safe: 3010, volumeGHS: 10560000 },
+    { name: 'Western', total: 2100, flagged: 85, safe: 2015, volumeGHS: 6930000 },
+    { name: 'Northern', total: 1800, flagged: 140, safe: 1660, volumeGHS: 5940000 },
+    { name: 'Central', total: 1500, flagged: 60, safe: 1440, volumeGHS: 4950000 },
+    { name: 'Volta', total: 900, flagged: 30, safe: 870, volumeGHS: 2970000 },
+  ];
+};
+
+export const fetchHourlyVelocity = () => {
+  return [
+    { time: '00:00', total: 420, flagged: 14, safe: 406 },
+    { time: '02:00', total: 280, flagged: 32, safe: 248 },
+    { time: '04:00', total: 210, flagged: 38, safe: 172 },
+    { time: '06:00', total: 720, flagged: 18, safe: 702 },
+    { time: '08:00', total: 1650, flagged: 45, safe: 1605 },
+    { time: '10:00', total: 2300, flagged: 68, safe: 2232 },
+    { time: '12:00', total: 2600, flagged: 52, safe: 2548 },
+    { time: '14:00', total: 2850, flagged: 56, safe: 2794 },
+    { time: '16:00', total: 2400, flagged: 42, safe: 2358 },
+    { time: '18:00', total: 2100, flagged: 48, safe: 2052 },
+    { time: '20:00', total: 1450, flagged: 34, safe: 1416 },
+    { time: '22:00', total: 850, flagged: 22, safe: 828 },
   ];
 };
